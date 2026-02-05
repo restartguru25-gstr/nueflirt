@@ -100,8 +100,11 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
+        // Only trigger global throw for actual permission-denied (e.g. rules).
+        // Other errors (e.g. failed-precondition / missing index) don't crash the app.
+        if (error?.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', contextualError);
+        }
       }
     );
 

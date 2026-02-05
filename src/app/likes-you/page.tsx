@@ -73,7 +73,7 @@ export default function LikesYouPage() {
         );
     }, [firestore, authUser]);
 
-    const { data: likes, isLoading: likesLoading } = useCollection<Like>(likesQuery);
+    const { data: likes, isLoading: likesLoading, error: likesError } = useCollection<Like>(likesQuery);
 
     const likerIds = useMemo(() => {
         if (!likes) return [];
@@ -96,6 +96,20 @@ export default function LikesYouPage() {
 
     if (isLoading) {
         return <AppLayout><div className="flex justify-center items-center h-full">Loading...</div></AppLayout>;
+    }
+
+    if (likesError) {
+        return (
+            <AppLayout>
+                <div className="space-y-6">
+                    <h1 className="text-3xl font-bold font-headline">Who Likes You</h1>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4 text-amber-800 dark:text-amber-200">
+                        <p className="font-medium">Unable to load this section</p>
+                        <p className="text-sm mt-1">If this keeps happening, your project may need a Firestore index. Deploy with: <code className="text-xs bg-black/10 dark:bg-white/10 px-1 rounded">firebase deploy --only firestore</code></p>
+                    </div>
+                </div>
+            </AppLayout>
+        );
     }
 
     /** Free users: show count + blurred/teased cards. Premium: full details. */
