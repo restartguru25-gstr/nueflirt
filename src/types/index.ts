@@ -11,7 +11,12 @@ export interface User {
   images: string[];
   interests: string[];
   teaserVideoUrl?: string;
+  /** Half-nude loop (6–8 sec) for reveal feature; requires explicit opt-in. */
+  revealTeaserUrl?: string;
+  /** Full progressive reveal video; gated by credits. */
   revealedVideoUrl?: string;
+  /** Generation status for reveal videos: idle | pending | ready | failed */
+  revealGenStatus?: 'idle' | 'pending' | 'ready' | 'failed';
   location: string;
   /** GPS latitude for distance-based discovery (optional). */
   latitude?: number;
@@ -65,13 +70,30 @@ export interface User {
   kids?: string;
   boostedUntil?: any;
   explicitContentOptIn?: boolean;
+
+  /** Relationship status: for Legacy Mode (married/widowed/divorced) and Vibes (situationship). */
+  relationshipStatus?: RelationshipStatus;
+  /** Discreet Legacy Mode: separate pool, premium-only. */
+  legacyModeOptIn?: boolean;
+  /** Anonymize avatars/videos in Legacy Mode (blur face). */
+  legacyAnonymizeAvatar?: boolean;
+  /** Fluid Vibes: points earned from challenges. */
+  vibePoints?: number;
+  /** Fluid Vibes: selected vibe filters (e.g. "flirty", "chill"). */
+  vibeFilters?: string[];
 }
+
+export type RelationshipStatus = 'single' | 'married' | 'widowed' | 'divorced' | 'situationship';
 
 export interface Match {
   id: string;
   user1Id: string;
   user2Id: string;
   matchedAt: any;
+  /** Situationship matches expire after 7 days; optional extension via credits. */
+  expiresAt?: any;
+  /** Set by Cloud Function or client when expired. */
+  expired?: boolean;
 }
 
 export interface Chat {
@@ -168,6 +190,8 @@ export interface VirtualDate {
 }
 
 /** In-app event (meetup, activity). */
+export type EventType = 'virtual_mixer' | 'zodiac_night' | 'legacy_meetup' | 'general';
+
 export interface AppEvent {
     id: string;
     title: string;
@@ -177,6 +201,8 @@ export interface AppEvent {
     imageUrl?: string;
     createdAt: any;
     createdBy?: string;
+    /** virtual_mixer | zodiac_night | legacy_meetup | general */
+    eventType?: EventType;
 }
 
 /** User's RSVP to an event. */
@@ -186,4 +212,64 @@ export interface EventRsvp {
     userId: string;
     status: 'interested' | 'going';
     createdAt: any;
+}
+
+/** WebRTC call signaling: one doc per chat, reused for each call. */
+export interface CallSession {
+    id: string;
+    chatId: string;
+    callerId: string;
+    calleeId: string;
+    /** 'voice' | 'video' */
+    callType: 'voice' | 'video';
+    status: 'ringing' | 'connected' | 'ended';
+    /** SDP offer from caller (type + sdp string). */
+    offer?: { type: string; sdp: string };
+    /** SDP answer from callee. */
+    answer?: { type: string; sdp: string };
+    createdAt: any;
+}
+
+/** ICE candidate for WebRTC, stored in subcollection. */
+export interface IceCandidateDoc {
+  id: string;
+  fromUid: string;
+  candidate: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null };
+  createdAt?: any;
+}
+
+/** AI Undressed Video Library: curated pre-generated videos. */
+export interface LibraryVideo {
+  id: string;
+  /** Full video URL (Storage or HLS). */
+  videoUrl: string;
+  /** 2-sec teaser URL for free preview (blurred). */
+  teaserUrl?: string;
+  /** Category/theme: indian_traditional, modern_fantasy, etc. */
+  category: string;
+  /** Duration in seconds (6–8). */
+  duration: number;
+  /** View count for popularity sort. */
+  popularity?: number;
+  /** Searchable tags. */
+  tags?: string[];
+  /** Display title. */
+  title?: string;
+  /** Thumbnail URL. */
+  thumbnailUrl?: string;
+  createdAt?: any;
+}
+
+/** Time-based library access session. */
+export interface LibrarySession {
+  start: any;  // Firestore Timestamp
+  expiry: any; // Firestore Timestamp
+}
+
+/** Time pass product (₹99/30min, etc.). */
+export interface LibraryTimePass {
+  id: string;
+  label: string;
+  durationMinutes: number;
+  priceInr: number;
 }

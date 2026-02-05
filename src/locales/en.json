@@ -5,6 +5,9 @@
   },
   "nav": {
     "discover": "Discover",
+    "library": "Library",
+    "legacy": "Legacy",
+    "vibes": "Vibes",
     "likes": "Likes",
     "chat": "Chat",
     "profile": "Profile",
@@ -81,6 +84,8 @@
     "filters": "Filters",
     "filterProfiles": "Filter Profiles",
     "filterSubtitle": "Find matches based on your preferences.",
+    "distance": "Distance",
+    "withinKm": "Within {km} km",
     "lookingFor": "Looking for",
     "language": "Language",
     "region": "Region",
@@ -193,7 +198,12 @@
     "videoCall": "Video call",
     "calling": "Calling {name}...",
     "callStub": "Full call requires WebRTC setup. Use your phone for now.",
+    "incomingCall": "Incoming {type} from {name}",
     "endCall": "End call",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "cameraOff": "Camera off",
+    "cameraOn": "Camera on",
     "virtualDate": "Virtual date",
     "virtualDateProposed": "Virtual date proposed",
     "virtualDateWaiting": "Virtual date proposed — waiting for response",
@@ -212,7 +222,9 @@
     "noMatchesForGroup": "Match with people first to create a group.",
     "createGroup": "Create group",
     "groupStart": "Start the conversation!",
-    "messageGroup": "Message group"
+    "messageGroup": "Message group",
+    "sayHello": "You matched. Say hello!",
+    "messagePlaceholder": "Message {name}"
   },
   "likes": {
     "title": "Likes You",

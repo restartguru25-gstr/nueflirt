@@ -30,6 +30,15 @@ Verification of features from your original "Missing" list. Each item is marked 
 | **Google/Facebook OAuth** | Login, Signup, `non-blocking-login.tsx` | Buttons + minimal profile creation for new OAuth users. |
 | **Web push notifications** | `hooks/use-push-notifications.ts`, Profile | Permission request; `pushEnabled` on profile; Push card on profile. |
 | **Zodiac compatibility** | `lib/zodiac.ts`, Dashboard, Profile | Zodiac sign; compatibility score + tagline on cards. |
+| **Voice in chat** | Chat [id], `hooks/use-voice-recorder.ts` | Message type `voice`; voice recording; "Voice note" label; playback in bubbles. |
+| **Video in chat** | Chat [id], types | Message type `video`; video file attach; `handleVideoSelect`; playback in bubbles. |
+| **Voice notes** | Same as Voice in chat | Voice recording + message type `voice`. |
+| **Video/voice calls** | Chat [id], `hooks/use-webrtc-call.ts` | WebRTC voice & video calls; call modal (incoming/outgoing/connected); mute camera/mic. |
+| **Panic/emergency location** | `/safety` page, types | Panic button; `panic_reports` collection; PanicReport type; share location with safety team. |
+| **Virtual dates** | Chat [id], types | VirtualDate type; `virtual_dates` collection; propose/accept/decline; "Join virtual date" → video call. |
+| **AI bio** | Profile, `ai/flows/ai-bio-suggestion.ts` | `suggestBio()`; Sparkles button on profile bio; AI-generated tagline from profile. |
+| **BFF/group modes** | Chat page, Chat [id], types | Group chat: `Chat.isGroup`, `chat/group-{id}`; create group; GroupChatListItem; multi-participant messages. |
+| **In-app events** | `/events` page, types | AppEvent, EventRsvp, EventType (virtual_mixer, zodiac_night, legacy_meetup); RSVP interested/going. |
 
 ---
 
@@ -46,25 +55,16 @@ Verification of features from your original "Missing" list. Each item is marked 
 
 | Feature | Notes |
 |--------|--------|
-| **Spotify/Instagram** | No profile fields or links for socials. |
-| **Voice in chat** | No voice message type or recording. |
-| **Video in chat** | Only image + GIF; no video message type. |
-| **Panic/emergency location** | No panic button or emergency location sharing. |
-| **Passport** | No travel/passport mode. |
-| **Video/voice calls** | No WebRTC or in-app call UI. |
-| **Voice notes** | No voice note message type. |
-| **Virtual dates** | No virtual date feature. |
-| **AI bio** | No AI-generated bio (there is AI avatar and profile video). |
-| **BFF/group modes** | No BFF or group chat / group mode. |
-| **UPI/payments/refunds/trials** | Subscribe page exists; no UPI, refunds, or trial logic. |
-| **In-app events** | No events or meetups feature. |
+| **Spotify/Instagram** | No profile fields or links for socials (e.g. Spotify/Instagram URL). |
+| **Passport** | No travel/passport mode (e.g. show profile in another city temporarily). |
+| **UPI/payments/refunds/trials** | Subscribe page and library time-pass exist; payment is simulated. No Razorpay/UPI integration, no refunds, no trial logic. |
 
 ---
 
 ## Summary
 
-- **Done:** 21 items (auth, profile, discovery, likes, chat media, time-limited chat, block, safety, ID verification, compatibility, plus earlier i18n, offline, OAuth, push, zodiac, verification, multi-photo, cultural filters).
+- **Done:** 31 items (auth, profile, discovery, likes, chat media, voice/video in chat, voice notes, time-limited chat, block, safety, panic, ID verification, compatibility, video/voice calls, virtual dates, AI bio, group chat, in-app events, plus i18n, offline, OAuth, push, zodiac, verification, multi-photo, cultural filters).
 - **Partial:** 2 (photo/video moderation, harassment/safety in chat).
-- **Not implemented:** 12 (Spotify/Instagram, voice/video in chat, panic, passport, calls, voice notes, virtual dates, AI bio, BFF/group, UPI/refunds/trials, in-app events).
+- **Not implemented:** 3 (Spotify/Instagram, Passport, real UPI/payments/refunds/trials).
 
 If you want to implement any of the **Partial** or **Not implemented** items next, say which ones and we can do them in phases.

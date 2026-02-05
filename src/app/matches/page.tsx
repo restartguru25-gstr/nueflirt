@@ -1,38 +1,56 @@
 'use client';
 
+import { useState } from 'react';
 import { AppLayout } from "@/components/app-layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { Button } from "@/components/ui/button";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { Eye } from "lucide-react";
 import type { Match, User } from "@/types";
-import { collection, query, where, or } from 'firebase/firestore';
+import { collection, query, where, or, doc } from 'firebase/firestore';
 import { dummyProfiles } from "@/lib/dummy-profiles";
+import { ProfileRevealDialog } from "@/components/profile-reveal-dialog";
 
-function MatchedUserCard({ profile, match }: { profile: User, match: Match }) {
+function MatchedUserCard({ profile, match, onRevealClick }: { profile: User; match: Match; onRevealClick?: () => void }) {
     const matchDate = match.matchedAt?.toDate ? match.matchedAt.toDate() : match.matchedAt;
     const matchedAt = matchDate ? formatDistanceToNow(matchDate, { addSuffix: true }) : 'recently';
-    
+    const hasRevealContent = !!(profile.revealTeaserUrl || profile.teaserVideoUrl || profile.revealedVideoUrl) || (profile.explicitContentOptIn && profile.images?.[0]);
+
     return (
-        <Link href={`/chat/${profile.id}`} key={profile.id}>
-            <Card className="overflow-hidden transition-all hover:scale-105 hover:shadow-primary/20">
-                <div className="relative aspect-[3/4]">
-                    <Avatar className="w-full h-full rounded-none">
-                        <AvatarImage src={profile.images?.[0]} className="object-cover" />
-                        <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white">
-                        <p className="font-semibold truncate">{profile.name}</p>
-                        <p className="text-xs opacity-80">
-                            Matched {matchedAt}
-                        </p>
+        <div className="relative">
+            <Link href={`/chat/${profile.id}`} key={profile.id}>
+                <Card className="overflow-hidden transition-all hover:scale-105 hover:shadow-primary/20">
+                    <div className="relative aspect-[3/4]">
+                        <Avatar className="w-full h-full rounded-none">
+                            <AvatarImage src={profile.images?.[0]} className="object-cover" />
+                            <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white">
+                            <p className="font-semibold truncate">{profile.name}</p>
+                            <p className="text-xs opacity-80">
+                                Matched {matchedAt}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </Card>
-        </Link>
+                </Card>
+            </Link>
+            {hasRevealContent && onRevealClick && (
+                <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRevealClick(); }}
+                    aria-label="View reveal"
+                >
+                    <Eye className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
     );
 }
 
@@ -74,11 +92,27 @@ export default function MatchesPage() {
         return new Map(matchedProfiles.map(p => [p.id, p]));
     }, [matchedProfiles]);
 
+    const subscriptionRef = useMemoFirebase(() => (firestore && authUser) ? doc(firestore, 'subscriptions', authUser.uid) : null, [firestore, authUser]);
+    const creditsRef = useMemoFirebase(() => (firestore && authUser) ? doc(firestore, 'credit_balances', authUser.uid) : null, [firestore, authUser]);
+    const currentProfileRef = useMemoFirebase(() => (firestore && authUser) ? doc(firestore, 'user_profiles', authUser.uid) : null, [firestore, authUser]);
+    const currentUserDataRef = useMemoFirebase(() => (firestore && authUser) ? doc(firestore, 'users', authUser.uid) : null, [firestore, authUser]);
+    const { data: subscription } = useDoc<{ planType?: string }>(subscriptionRef);
+    const { data: credits } = useDoc<{ balance?: number }>(creditsRef);
+    const { data: currentUserProfile } = useDoc<User>(currentProfileRef);
+    const { data: currentUserData } = useDoc<{ explicitContentOptIn?: boolean }>(currentUserDataRef);
+    const [revealProfile, setRevealProfile] = useState<User | null>(null);
+
     const displayData = useMemo(() => {
         if (!authUser) return [];
-
-        const realData = (matches || [])
-            .map(match => {
+        const now = new Date();
+        const nonExpired = (matches ?? []).filter(m => {
+          if (m.expired) return false;
+          const exp = m.expiresAt?.toDate?.() ?? m.expiresAt;
+          if (exp && exp < now) return false;
+          return true;
+        });
+        const realData = nonExpired
+            .map((match: Match) => {
                 const otherUserId = authUser && (match.user1Id === authUser.uid ? match.user2Id : match.user1Id);
                 const profile = otherUserId ? profilesById.get(otherUserId) : undefined;
                 if (!profile) return null;
@@ -118,11 +152,30 @@ export default function MatchesPage() {
                     <p className="text-muted-foreground">This is where your conversations begin.</p>
                 </div>
                 {displayData && displayData.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {displayData.map(({match, profile}) => {
-                            return <MatchedUserCard key={match.id} profile={profile} match={match} />
-                        })}
-                    </div>
+                    <>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            {displayData.map(({match, profile}) => (
+                                <MatchedUserCard
+                                    key={match.id}
+                                    profile={profile}
+                                    match={match}
+                                    onRevealClick={() => setRevealProfile(profile)}
+                                />
+                            ))}
+                        </div>
+                        {revealProfile && authUser && currentUserProfile && (
+                            <ProfileRevealDialog
+                                profile={revealProfile}
+                                currentUserId={authUser.uid}
+                                open={!!revealProfile}
+                                onOpenChange={(open) => !open && setRevealProfile(null)}
+                                isPremium={subscription?.planType === 'premium'}
+                                credits={credits?.balance ?? 0}
+                                currentUserExplicitOptIn={!!(currentUserData?.explicitContentOptIn ?? currentUserProfile?.explicitContentOptIn)}
+                                isMatch={true}
+                            />
+                        )}
+                    </>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg">
                         <p className="text-muted-foreground">No matches yet.</p>

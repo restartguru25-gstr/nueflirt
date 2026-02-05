@@ -18,7 +18,7 @@ const GenerateProfileVideoInputSchema = z.object({
     ),
   style: z
     .string()
-    .describe("The desired style of the video, e.g., 'traditional Indian' or 'modern'."),
+    .describe("The desired style of the video, e.g., 'traditional Indian', 'modern', or 'legacy_mature' for Discreet Legacy Mode."),
 });
 export type GenerateProfileVideoInput = z.infer<typeof GenerateProfileVideoInputSchema>;
 
@@ -40,11 +40,15 @@ const generateProfileVideoFlow = ai.defineFlow(
     outputSchema: GenerateProfileVideoOutputSchema,
   },
   async input => {
+    const isLegacyMature = input.style.toLowerCase().includes('legacy') || input.style === 'legacy_mature';
+    const stylePrompt = isLegacyMature
+      ? 'mature, elegant, discreet aesthetic suitable for a private dating profile; tasteful and refined.'
+      : `the style of ${input.style}`;
     let { operation } = await ai.generate({
       model: 'veo-3.0-generate-preview',
       prompt: [
         {
-          text: `Generate a short, SFW (safe for work) video in the style of ${input.style} based on the following photo. The video should be suitable for use as a dating profile teaser. Do not include any explicit or suggestive content.`,
+          text: `Generate a short, SFW (safe for work) video in ${stylePrompt} based on the following photo. The video should be suitable for use as a dating profile teaser. Do not include any explicit or suggestive content.`,
         },
         {
           media: {

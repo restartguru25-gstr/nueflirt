@@ -6,16 +6,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, MoreVertical, Send, Sparkles, Loader2, ShieldAlert, X, Ban, ImagePlus, Smile, Mic, Video, Phone, VideoIcon, Calendar, Users } from "lucide-react";
+import { ArrowLeft, MoreVertical, Send, Sparkles, Loader2, ShieldAlert, X, Ban, ImagePlus, Smile, Mic, Video, Phone, VideoIcon, Calendar, Users, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { Message, User as ChatUser, Chat, VirtualDate } from '@/types';
+import type { Message, User as ChatUser, Chat, VirtualDate, Match } from '@/types';
 import { useUser, useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking, useCollection } from '@/firebase';
-import { doc, collection, query, orderBy, serverTimestamp, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, serverTimestamp, where, getDocs, updateDoc, or, Timestamp } from 'firebase/firestore';
 import { generateInteractiveReveal } from '@/ai/flows/interactive-reveal-generation';
 import { generateIcebreakers } from '@/ai/flows/icebreaker-generation';
 import { useToast } from '@/hooks/use-toast';
@@ -25,8 +25,9 @@ import { useOfflineMessages } from '@/hooks/use-offline';
 import { useLocale } from '@/contexts/locale-context';
 import { CHAT_GIF_OPTIONS } from '@/lib/chat-gifs';
 import { getOverallCompatibilityScore } from '@/lib/zodiac';
-import { CHAT_EXPIRY_DAYS } from '@/lib/limits';
+import { CHAT_EXPIRY_DAYS, EXTEND_MATCH_CREDITS, SITUATIONSHIP_EXTEND_DAYS } from '@/lib/limits';
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
+import { useWebRTCCall } from '@/hooks/use-webrtc-call';
 
 const SENSITIVE_KEYWORDS = ['ugly', 'stupid', 'hate', 'kill', 'idiot', 'freak'];
 
@@ -58,6 +59,8 @@ export default function ChatPage() {
     const [gifPopoverOpen, setGifPopoverOpen] = useState(false);
     const [callModalOpen, setCallModalOpen] = useState(false);
     const [callType, setCallType] = useState<'voice' | 'video'>('voice');
+    const [isCaller, setIsCaller] = useState(false);
+    const callerStartedRef = useRef(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +69,40 @@ export default function ChatPage() {
     }, []);
     const { isRecording, isSupported: voiceSupported, startRecording, stopRecording } = useVoiceRecorder(onVoiceResult);
     const handleSendRef = useRef<(opts?: { type?: 'text' | 'image' | 'gif' | 'voice' | 'video'; mediaUrl?: string; durationSeconds?: number }) => void>(() => {});
+
+    const webrtc = useWebRTCCall({
+        firestore,
+        chatId,
+        myUid: authUser?.uid ?? null,
+        remoteUid: otherUserId ?? null,
+        callType,
+        isCaller,
+        active: callModalOpen,
+    });
+
+    useEffect(() => {
+        if (webrtc.callState === 'incoming') {
+            setCallModalOpen(true);
+            setIsCaller(false);
+        }
+        if (webrtc.callState === 'ended' || webrtc.callState === 'declined') {
+            setCallModalOpen(false);
+        }
+    }, [webrtc.callState]);
+
+    useEffect(() => {
+        if (callModalOpen && isCaller && chatId && authUser && otherUserId && !callerStartedRef.current) {
+            callerStartedRef.current = true;
+            webrtc.startCall();
+        }
+        if (!callModalOpen) callerStartedRef.current = false;
+    }, [callModalOpen, isCaller, chatId, authUser?.uid, otherUserId]);
+
+    const handleCloseCallModal = useCallback(() => {
+        setCallModalOpen(false);
+        if (webrtc.callState === 'incoming') webrtc.declineCall().catch(() => {});
+        else if (webrtc.callState === 'outgoing' || webrtc.callState === 'connected') webrtc.endCall().catch(() => {});
+    }, [webrtc.callState, webrtc.endCall, webrtc.declineCall]);
 
     // Fetch current user's full profile for Icebreaker context
     const currentUserProfileRef = useMemoFirebase(() => (firestore && authUser) ? doc(firestore, 'user_profiles', authUser.uid) : null, [firestore, authUser]);
@@ -97,6 +134,16 @@ export default function ChatPage() {
         return virtualDatesList.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))[0] ?? null;
     }, [virtualDatesList]);
 
+    const myMatchesQuery = useMemoFirebase(() => (firestore && authUser?.uid) ? query(collection(firestore, 'matches'), or(where('user1Id', '==', authUser.uid), where('user2Id', '==', authUser.uid))) : null, [firestore, authUser?.uid]);
+    const { data: myMatches } = useCollection<Match>(myMatchesQuery);
+    const matchDoc = useMemo(() => {
+        if (!myMatches || !authUser?.uid || !otherUserId) return null;
+        return myMatches.find(m => (m.user1Id === authUser.uid && m.user2Id === otherUserId) || (m.user1Id === otherUserId && m.user2Id === authUser.uid)) ?? null;
+    }, [myMatches, authUser?.uid, otherUserId]);
+
+    const creditsRef = useMemoFirebase(() => (firestore && authUser) ? doc(firestore, 'credit_balances', authUser.uid) : null, [firestore, authUser]);
+    const { data: creditBalance } = useDoc<{ balance: number }>(creditsRef);
+
     const messagesQuery = useMemoFirebase(() => (firestore && chatId) ? query(collection(firestore, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc')) : null, [firestore, chatId]);
     const { data: rawMessages, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
     const liveMessages: Message[] = useMemo(() => rawMessages ? rawMessages.map(msg => ({ ...msg, timestamp: msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date() })) : [], [rawMessages]);
@@ -122,6 +169,7 @@ export default function ChatPage() {
     const [revealedVideoUrl, setRevealedVideoUrl] = useState<string | null>(null);
     const [isGeneratingIcebreakers, setIsGeneratingIcebreakers] = useState(false);
     const [icebreakers, setIcebreakers] = useState<string[]>([]);
+    const [extendingMatch, setExtendingMatch] = useState(false);
 
 
     const handleTyping = (text: string) => {
@@ -268,12 +316,14 @@ export default function ChatPage() {
           currentUserProfile: {
             name: currentUserProfile.name,
             bio: currentUserProfile.bio,
-            interests: currentUserProfile.interests
+            interests: currentUserProfile.interests,
+            promptAnswers: currentUserProfile.promptAnswers?.filter(p => p.answer?.trim())
           },
           otherUserProfile: {
             name: chatPartnerProfile.name,
             bio: chatPartnerProfile.bio,
-            interests: chatPartnerProfile.interests
+            interests: chatPartnerProfile.interests,
+            promptAnswers: chatPartnerProfile.promptAnswers?.filter(p => p.answer?.trim())
           }
         });
         setIcebreakers(result.icebreakers);
@@ -348,10 +398,35 @@ export default function ChatPage() {
         await updateDoc(doc(firestore, 'virtual_dates', virtualDate.id), { status: 'declined' });
         toast({ title: t('chat.virtualDateDeclined') });
     };
-    
+
+    const handleExtendMatch = async () => {
+        if (!firestore || !authUser || !matchDoc?.id || !creditsRef) return;
+        const balance = creditBalance?.balance ?? 0;
+        if (balance < EXTEND_MATCH_CREDITS) {
+            toast({ variant: 'destructive', title: 'Not enough credits', description: `Extending costs ${EXTEND_MATCH_CREDITS} credits. You have ${balance}.` });
+            return;
+        }
+        setExtendingMatch(true);
+        try {
+            const currentExp = matchDoc.expiresAt?.toDate?.() ?? matchDoc.expiresAt;
+            const base = currentExp && (currentExp instanceof Date ? currentExp : new Date(currentExp)) > new Date()
+                ? (currentExp instanceof Date ? currentExp : new Date(currentExp))
+                : new Date();
+            const newExpiresAt = new Date(base.getTime() + SITUATIONSHIP_EXTEND_DAYS * 24 * 60 * 60 * 1000);
+            await updateDoc(doc(firestore, 'matches', matchDoc.id), { expiresAt: Timestamp.fromDate(newExpiresAt) });
+            await updateDoc(creditsRef, { balance: Math.max(0, balance - EXTEND_MATCH_CREDITS) });
+            toast({ title: 'Match extended!', description: `+${SITUATIONSHIP_EXTEND_DAYS} days. New expiry: ${newExpiresAt.toLocaleDateString()}.` });
+        } catch (e) {
+            console.error(e);
+            toast({ variant: 'destructive', title: 'Could not extend match' });
+        } finally {
+            setExtendingMatch(false);
+        }
+    };
+
     const isLoading = isUserLoading || isCurrentUserProfileLoading || isChatPartnerLoading || messagesLoadingFinal;
 
-    const partnerIsTyping = chatData?.typing?.[otherUserId] === true;
+    const partnerIsTyping = otherUserId != null && chatData?.typing?.[otherUserId] === true;
     const lastSeenDate = chatPartnerProfile?.lastSeen?.toDate ? chatPartnerProfile.lastSeen.toDate() : null;
     const lastSeen = lastSeenDate ? formatDistanceToNow(lastSeenDate, { addSuffix: true }) : 'offline';
     const isOnline = lastSeenDate ? (new Date().getTime() - lastSeenDate.getTime()) < 2 * 60 * 1000 : false;
@@ -374,6 +449,24 @@ export default function ChatPage() {
                         {t('chat.expired')}
                     </div>
                 )}
+                {!isGroupChat && matchDoc?.expiresAt && !matchDoc.expired && (() => {
+                    const expDate = matchDoc.expiresAt?.toDate?.() ?? (matchDoc.expiresAt instanceof Date ? matchDoc.expiresAt : new Date(matchDoc.expiresAt));
+                    const now = new Date();
+                    if (expDate <= now) return null;
+                    const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+                    const credits = creditBalance?.balance ?? 0;
+                    return (
+                        <div className="mx-3 mt-2 p-3 rounded-lg bg-primary/10 border border-primary/20 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-sm">
+                                This match expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}.
+                            </span>
+                            <Button size="sm" variant="secondary" className="gap-1" onClick={handleExtendMatch} disabled={extendingMatch || credits < EXTEND_MATCH_CREDITS}>
+                                <Coins className="h-4 w-4" />
+                                {extendingMatch ? 'Extending...' : `Extend +${SITUATIONSHIP_EXTEND_DAYS} days (${EXTEND_MATCH_CREDITS} credits)`}
+                            </Button>
+                        </div>
+                    );
+                })()}
                 <div className="flex items-center p-3 border-b">
                     <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.back()}><ArrowLeft className="h-5 w-5" /></Button>
                     {isGroupChat ? (
@@ -388,10 +481,10 @@ export default function ChatPage() {
                     <div className="ml-auto flex items-center gap-2">
                         {!isGroupChat && (
                             <>
-                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setCallType('voice'); setCallModalOpen(true); }} title={t('chat.voiceCall')}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setCallType('voice'); setIsCaller(true); setCallModalOpen(true); }} title={t('chat.voiceCall')}>
                             <Phone className="h-5 w-5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setCallType('video'); setCallModalOpen(true); }} title={t('chat.videoCall')}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setCallType('video'); setIsCaller(true); setCallModalOpen(true); }} title={t('chat.videoCall')}>
                             <VideoIcon className="h-5 w-5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleProposeVirtualDate} title={t('chat.virtualDate')}>
@@ -418,7 +511,7 @@ export default function ChatPage() {
                                     <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()}><ShieldAlert className="mr-2 h-4 w-4 text-destructive" /> {t('safety.reportUser')}</DropdownMenuItem></AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Report {chatPartnerProfile.name}</AlertDialogTitle>
+                                            <AlertDialogTitle>Report {chatPartnerProfile?.name ?? 'user'}</AlertDialogTitle>
                                             <AlertDialogDescription>Please provide a reason for reporting this user. Your report is anonymous.</AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <Textarea placeholder="E.g., Inappropriate messages, spam, etc." value={reportReason} onChange={(e) => setReportReason(e.target.value)} />
@@ -447,17 +540,86 @@ export default function ChatPage() {
                     </div>
                 </div>
 
-                <Dialog open={callModalOpen} onOpenChange={setCallModalOpen}>
-                    <DialogContent className="sm:max-w-md">
+                <Dialog open={callModalOpen} onOpenChange={(open) => { if (!open) handleCloseCallModal(); else setCallModalOpen(true); }}>
+                    <DialogContent className={webrtc.callState === 'connected' ? 'sm:max-w-2xl' : 'sm:max-w-md'}>
                         <DialogHeader>
-                            <DialogTitle>{callType === 'voice' ? t('chat.voiceCall') : t('chat.videoCall')}</DialogTitle>
+                            <DialogTitle>
+                                {webrtc.callState === 'incoming' && t('chat.incomingCall', { type: callType === 'video' ? t('chat.videoCall') : t('chat.voiceCall'), name: displayName })}
+                                {webrtc.callState === 'outgoing' && (callType === 'voice' ? t('chat.voiceCall') : t('chat.videoCall'))}
+                                {webrtc.callState === 'connected' && (callType === 'voice' ? t('chat.voiceCall') : t('chat.videoCall'))}
+                                {!['incoming', 'outgoing', 'connected'].includes(webrtc.callState) && (callType === 'voice' ? t('chat.voiceCall') : t('chat.videoCall'))}
+                            </DialogTitle>
                         </DialogHeader>
-                        <div className="flex flex-col items-center justify-center py-6 gap-4">
-                            <Avatar className="h-20 w-20"><AvatarImage src={!isGroupChat ? chatPartnerProfile?.images?.[0] : undefined} /><AvatarFallback>{displayName?.charAt(0)}</AvatarFallback></Avatar>
-                            <p className="text-sm text-muted-foreground">{t('chat.calling', { name: displayName })}</p>
-                            <p className="text-xs text-muted-foreground">{t('chat.callStub')}</p>
-                            <Button variant="destructive" onClick={() => setCallModalOpen(false)}>{t('chat.endCall')}</Button>
-                        </div>
+                        {webrtc.error && (
+                            <Alert variant="destructive" className="rounded-lg">
+                                <AlertDescription>{webrtc.error}</AlertDescription>
+                            </Alert>
+                        )}
+                        {webrtc.callState === 'incoming' && (
+                            <div className="flex flex-col items-center justify-center py-6 gap-4">
+                                <Avatar className="h-20 w-20"><AvatarImage src={!isGroupChat ? chatPartnerProfile?.images?.[0] : undefined} /><AvatarFallback>{displayName?.charAt(0)}</AvatarFallback></Avatar>
+                                <p className="text-sm text-muted-foreground">{t('chat.incomingCall', { type: callType === 'video' ? t('chat.videoCall') : t('chat.voiceCall'), name: displayName })}</p>
+                                <div className="flex gap-2">
+                                    <Button variant="destructive" onClick={() => { webrtc.declineCall(); setCallModalOpen(false); }}>{t('chat.decline')}</Button>
+                                    <Button onClick={() => webrtc.acceptCall()}>{t('chat.accept')}</Button>
+                                </div>
+                            </div>
+                        )}
+                        {(webrtc.callState === 'idle' && isCaller) && (
+                            <div className="flex flex-col items-center justify-center py-6 gap-4">
+                                <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                                <p className="text-sm text-muted-foreground">Starting call...</p>
+                            </div>
+                        )}
+                        {webrtc.callState === 'outgoing' && (
+                            <div className="flex flex-col items-center justify-center py-6 gap-4">
+                                <Avatar className="h-20 w-20"><AvatarImage src={!isGroupChat ? chatPartnerProfile?.images?.[0] : undefined} /><AvatarFallback>{displayName?.charAt(0)}</AvatarFallback></Avatar>
+                                <p className="text-sm text-muted-foreground">{t('chat.calling', { name: displayName })}</p>
+                                <div className="flex gap-2 items-center flex-wrap justify-center">
+                                    {callType === 'video' && webrtc.localStream && (
+                                        <video ref={(el) => { if (el) el.srcObject = webrtc.localStream; }} autoPlay muted playsInline className="w-32 h-32 object-cover rounded-lg bg-black" />
+                                    )}
+                                    <Button variant="destructive" onClick={handleCloseCallModal}>{t('chat.endCall')}</Button>
+                                </div>
+                            </div>
+                        )}
+                        {webrtc.callState === 'connected' && (
+                            <div className="flex flex-col gap-3 py-2">
+                                <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
+                                    {callType === 'video' ? (
+                                        <>
+                                            {webrtc.remoteStream && (
+                                                <video ref={(el) => { if (el) el.srcObject = webrtc.remoteStream; }} autoPlay playsInline className="w-full h-full object-contain" />
+                                            )}
+                                            {!webrtc.remoteStream && (
+                                                <div className="absolute inset-0 flex items-center justify-center text-white/80">
+                                                    <span>Waiting for {displayName}...</span>
+                                                </div>
+                                            )}
+                                            {webrtc.localStream && (
+                                                <video ref={(el) => { if (el) el.srcObject = webrtc.localStream; }} autoPlay muted playsInline className="absolute bottom-2 right-2 w-24 h-24 object-cover rounded-lg border-2 border-white shadow-lg" />
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-white/80 gap-4">
+                                            <Avatar className="h-20 w-20 border-2 border-white"><AvatarImage src={!isGroupChat ? chatPartnerProfile?.images?.[0] : undefined} /><AvatarFallback>{displayName?.charAt(0)}</AvatarFallback></Avatar>
+                                            <span>Voice call with {displayName}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-center gap-2 flex-wrap">
+                                    {callType === 'video' && (
+                                        <Button variant="outline" size="icon" title={webrtc.isMutedVideo ? t('chat.cameraOn') : t('chat.cameraOff')} onClick={() => webrtc.setMutedVideo(!webrtc.isMutedVideo)}>
+                                            <VideoIcon className={cn("h-5 w-5", webrtc.isMutedVideo && "opacity-50")} />
+                                        </Button>
+                                    )}
+                                    <Button variant="outline" size="icon" title={webrtc.isMutedAudio ? t('chat.unmute') : t('chat.mute')} onClick={() => webrtc.setMutedAudio(!webrtc.isMutedAudio)}>
+                                        <Mic className={cn("h-5 w-5", webrtc.isMutedAudio && "opacity-50")} />
+                                    </Button>
+                                    <Button variant="destructive" onClick={handleCloseCallModal}>{t('chat.endCall')}</Button>
+                                </div>
+                            </div>
+                        )}
                     </DialogContent>
                 </Dialog>
                 
@@ -478,7 +640,7 @@ export default function ChatPage() {
                             <span className="text-sm">{t('chat.virtualDateWaiting')}</span>
                         ) : (
                             <>
-                                <span className="text-sm">{t('chat.virtualDateProposedBy', { name: chatPartnerProfile.name })}</span>
+                                <span className="text-sm">{t('chat.virtualDateProposedBy', { name: chatPartnerProfile?.name ?? '' })}</span>
                                 <div className="flex gap-2">
                                     <Button size="sm" variant="outline" onClick={handleDeclineVirtualDate}>{t('chat.decline')}</Button>
                                     <Button size="sm" onClick={handleAcceptVirtualDate}>{t('chat.accept')}</Button>
@@ -490,7 +652,7 @@ export default function ChatPage() {
                 {virtualDate?.status === 'accepted' && (
                     <div className="mx-3 mt-2 p-3 rounded-lg border bg-primary/10 flex items-center justify-between gap-2">
                         <span className="text-sm">{t('chat.virtualDateAcceptedJoin')}</span>
-                        <Button size="sm" onClick={() => { setCallType('video'); setCallModalOpen(true); }}>{t('chat.joinVirtualDate')}</Button>
+                        <Button size="sm" onClick={() => { setCallType('video'); setIsCaller(true); setCallModalOpen(true); }}>{t('chat.joinVirtualDate')}</Button>
                     </div>
                 )}
 
@@ -507,7 +669,7 @@ export default function ChatPage() {
                         <div className='flex flex-col items-center justify-center h-full text-center'>
                              {isGroupChat ? <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center mb-4"><Users className="h-12 w-12 text-primary" /></div> : <Avatar className="h-24 w-24 mb-4"><AvatarImage src={chatPartnerProfile?.images?.[0]} /><AvatarFallback>{chatPartnerProfile?.name?.charAt(0)}</AvatarFallback></Avatar>}
                             <h3 className="font-semibold text-xl">{displayName}</h3>
-                            <p className='text-muted-foreground'>{isGroupChat ? t('chat.groupStart') : 'You matched. Say hello!'}</p>
+                            <p className='text-muted-foreground'>{isGroupChat ? t('chat.groupStart') : t('chat.sayHello')}</p>
                             {!isGroupChat && <p className='text-xs text-muted-foreground mt-2'>Stuck? Use the <Sparkles className="inline h-3 w-3" /> icon below to get AI-powered icebreakers.</p>}
                         </div>
                     )}
@@ -538,7 +700,7 @@ export default function ChatPage() {
                     <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoSelect} />
                     <div className="relative flex w-full items-center gap-2">
                         <Input
-                            placeholder={isExpired ? t('chat.expired') : (isGroupChat ? t('chat.messageGroup') : `Message ${chatPartnerProfile?.name}`)}
+                            placeholder={isExpired ? t('chat.expired') : (isGroupChat ? t('chat.messageGroup') : t('chat.messagePlaceholder', { name: chatPartnerProfile?.name ?? '' }))}
                             className="pr-28"
                             value={newMessage}
                             onChange={(e) => handleTyping(e.target.value)}

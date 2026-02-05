@@ -115,11 +115,10 @@ service cloud.firestore {
      * @principle Implements public read with owner-only writes.
      */
     match /user_profiles/{profileId} {
-      // CRITICAL: This rule assumes a 'userId' field exists on user_profile documents for ownership checks.
+      // Document ID is user UID (user_profiles/{uid}). Owner can read/write own profile.
       allow get, list: if true; // Profiles must be public for a dating app.
-      allow create: if ownsIncomingDoc('userId');
-      allow update: if isExistingOwner(resource.data.userId) && isImmutable('userId');
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow create: if isSignedIn() && request.auth.uid == profileId;
+      allow update, delete: if isSignedIn() && request.auth.uid == profileId;
     }
 
     /**
@@ -178,7 +177,8 @@ service cloud.firestore {
       // to only fetch matches where the user is a participant.
       allow list: if isSignedIn();
       allow create: if isIncomingParticipant();
-      allow update: if false; // Matches should be immutable.
+      // Allow participants to update (e.g. extend situationship match expiresAt).
+      allow update: if isParticipant();
       allow delete: if isParticipant() && documentExists();
     }
 
@@ -253,18 +253,16 @@ service cloud.firestore {
     }
     
     /**
-     * @description Manages a user's credit balance. Readable by user, writable only by server.
+     * @description Manages a user's credit balance. Owner can read and create/merge their doc (e.g. initial balance).
      * @path /credit_balances/{creditBalanceId}
-     * @allow (get) A user reading their own credit balance.
-     * @deny (update) A user attempting to give themselves more credits.
-     * @principle Enforces document ownership for reads and restricts writes.
+     * @allow (get, list, create, update) Owner only; doc ID is userId.
+     * @note For production, consider updating balance only via Cloud Functions/Admin SDK to prevent client tampering.
      */
     match /credit_balances/{creditBalanceId} {
-      // NOTE: list is allowed, but client queries must be secured with `where('userId', '==', request.auth.uid)`.
       allow get: if isOwner(creditBalanceId);
       allow list: if isSignedIn();
-      allow create: if ownsIncomingDoc('userId'); // Initial creation might be allowed.
-      allow update: if false; // Balances must be updated by a trusted server environment.
+      allow create: if ownsIncomingDoc('userId');
+      allow update: if isExistingOwner(resource.data.userId) && resource.data.userId == creditBalanceId;
       allow delete: if false;
     }
 
@@ -281,6 +279,73 @@ service cloud.firestore {
       allow create: if ownsIncomingDoc('reporterId') && request.resource.data.reporterId != request.resource.data.reportedId;
       allow update: if false;
       allow delete: if false;
+    }
+
+    /**
+     * @description Manages block list: who the current user has blocked.
+     * @path /blocks/{blockId}
+     * @allow (list) Signed-in users can list their own blocks (client must query where blockerId == request.auth.uid).
+     * @allow (get, create, update, delete) Only the blocker (owner) can read/write their block documents.
+     */
+    match /blocks/{blockId} {
+      allow get: if isSignedIn() && resource.data.blockerId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.blockerId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.blockerId);
+      allow delete: if isSignedIn() && resource.data.blockerId == request.auth.uid;
+    }
+
+    /**
+     * @description Virtual date proposals per chat. Only the two participants (user1Id, user2Id) can read/write.
+     * @path /virtual_dates/{virtualDateId}
+     */
+    match /virtual_dates/{virtualDateId} {
+      function isVirtualDateParticipant() {
+        return isSignedIn() && (request.auth.uid == resource.data.user1Id || request.auth.uid == resource.data.user2Id);
+      }
+      function isIncomingParticipant() {
+        return isSignedIn() && (request.auth.uid == request.resource.data.user1Id || request.auth.uid == request.resource.data.user2Id)
+          && request.resource.data.proposedBy == request.auth.uid;
+      }
+      allow get: if isVirtualDateParticipant();
+      allow list: if isSignedIn();
+      allow create: if isIncomingParticipant();
+      allow update: if isVirtualDateParticipant();
+      allow delete: if false;
+    }
+
+    /**
+     * @description WebRTC call signaling. Only caller and callee can read/write.
+     * @path /calls/{callId} (callId = chatId for 1:1)
+     */
+    match /calls/{callId} {
+      function isCallerOrCallee() {
+        return isSignedIn() && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.calleeId);
+      }
+      function isCallerOrCalleeIncoming() {
+        return isSignedIn() && (request.auth.uid == request.resource.data.callerId || request.auth.uid == request.resource.data.calleeId);
+      }
+      allow get: if isCallerOrCallee();
+      allow list: if false;
+      allow create: if isCallerOrCalleeIncoming();
+      allow update: if isCallerOrCallee();
+      allow delete: if isCallerOrCallee();
+    }
+    match /calls/{callId}/iceCandidates/{candidateId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description AI Undressed Video Library: curated pre-generated videos.
+     * @path /library_videos/{videoId}
+     * @allow (get, list) Signed-in users with explicit opt-in can browse metadata.
+     * @deny (create, update, delete) Admin-only via Cloud Functions.
+     */
+    match /library_videos/{videoId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false; // Admin Cloud Function only
     }
   }
 }

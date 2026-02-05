@@ -5,11 +5,11 @@ import { AppLayout } from '@/components/app-layout';
 import type { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Star, X, Filter, Sparkles, ShieldCheck, RefreshCcw, Flower2 } from 'lucide-react';
+import { Heart, Star, X, Filter, Sparkles, ShieldCheck, RefreshCcw, Flower2, Eye } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser, useCollection, useFirestore, useMemoFirebase, useDoc, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc, query, where, getDocs, serverTimestamp, Query, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, Query, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,6 +26,7 @@ import { distanceKm, DISTANCE_OPTIONS_KM } from '@/lib/geo';
 import { getCompatibilityScore, getZodiacMatchTagline, getOverallCompatibilityScore } from '@/lib/zodiac';
 import type { Like, Block } from '@/types';
 import { DAILY_LIKE_LIMIT_FREE, DAILY_SUPER_LIKE_LIMIT_FREE, ROSE_CREDITS_COST, DEFAULT_AGE_MIN, DEFAULT_AGE_MAX } from '@/lib/limits';
+import { ProfileRevealDialog } from '@/components/profile-reveal-dialog';
 
 const indianLanguages = ["Any", ...languages];
 const indianRegions = ["Any", ...regions];
@@ -34,37 +35,59 @@ const casteOptionsList = casteOpts;
 const datingIntents = ["Any", ...intents];
 
 
-function UserCard({ user, currentUserProfile, onLike, onDislike }: { user: User; currentUserProfile?: User | null; onLike: () => void; onDislike: () => void; }) {
+function UserCard({ user, currentUserProfile, onLike, onDislike, onRevealClick, exitDirection = 0, stackIndex = 0 }: { user: User; currentUserProfile?: User | null; onLike: () => void; onDislike: () => void; onRevealClick?: () => void; exitDirection?: number; stackIndex?: number }) {
   const zodiacTagline = user.zodiac ? getZodiacMatchTagline(user.zodiac) : null;
   const compatibilityScore = currentUserProfile ? getOverallCompatibilityScore(currentUserProfile, user) : null;
+  const hasRevealContent = !!(user.revealTeaserUrl || user.teaserVideoUrl || user.revealedVideoUrl) || (user.explicitContentOptIn && user.images?.[0]);
   return (
     <motion.div
-      className="absolute h-full w-full"
-      initial={{ scale: 0.9, y: 20, opacity: 0 }}
+      className="absolute inset-0 h-full w-full"
+      style={{ zIndex: stackIndex }}
+      initial={{ scale: 0.92, y: 24, opacity: 0 }}
       animate={{ scale: 1, y: 0, opacity: 1 }}
-      exit={{ x: 300, opacity: 0, transition: { duration: 0.3 } }}
-      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+      exit={{
+        x: exitDirection * 420,
+        opacity: 0,
+        scale: 0.92,
+        transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+      }}
+      transition={{ type: 'spring', stiffness: 120, damping: 24 }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.5}
-      onDragEnd={(e, { offset }) => {
-        if (offset.x > 150) onLike();
-        else if (offset.x < -150) onDislike();
+      dragElastic={0.6}
+      onDragEnd={(_, { offset, velocity }) => {
+        if (offset.x > 120 || velocity.x > 200) onLike();
+        else if (offset.x < -120 || velocity.x < -200) onDislike();
       }}
     >
-      <Card className="relative h-full w-full overflow-hidden shadow-2xl shadow-primary/10">
-        {user.teaserVideoUrl ? (
-          <video key={user.teaserVideoUrl} className="absolute top-0 left-0 h-full w-full object-cover" autoPlay loop muted playsInline>
-            <source src={user.teaserVideoUrl} type="video/mp4" />
+      <Card className="relative h-full w-full overflow-hidden shadow-card hover:shadow-glow-primary transition-shadow duration-300 rounded-2xl">
+        {hasRevealContent && onRevealClick && (
+          <button
+            type="button"
+            className="absolute top-3 right-3 z-20 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRevealClick(); }}
+            aria-label="View reveal"
+          >
+            <Eye className="h-5 w-5" />
+          </button>
+        )}
+        {(user.revealTeaserUrl || user.teaserVideoUrl) ? (
+          <video key={user.revealTeaserUrl || user.teaserVideoUrl} className="absolute top-0 left-0 h-full w-full object-cover" autoPlay loop muted playsInline>
+            <source src={user.revealTeaserUrl || user.teaserVideoUrl} type="video/mp4" />
           </video>
         ) : (
           user.images?.[0] && <img src={user.images[0]} alt={user.name} className="absolute top-0 left-0 h-full w-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <CardContent className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-3xl font-bold font-headline">{user.name}, {user.age}</h3>
             {user.isVerified && <ShieldCheck className="w-7 h-7 text-green-400" />}
+            {user.datingIntent && (
+              <Badge variant="secondary" className="bg-primary/30 text-white backdrop-blur-sm border-primary/50 shrink-0 text-xs">
+                {user.datingIntent}
+              </Badge>
+            )}
           </div>
           <p className="text-sm opacity-90 mt-1">{user.location}</p>
           <p className="mt-2 text-base line-clamp-2">{user.bio}</p>
@@ -102,11 +125,15 @@ export default function DashboardPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [smartSort, setSmartSort] = useState(false);
   const [userStack, setUserStack] = useState<User[]>([]);
+  const [exitDirection, setExitDirection] = useState(0); // -1 left, 0 none, 1 right
   const [lastDislikedProfile, setLastDislikedProfile] = useState<User | null>(null);
   const [newMatch, setNewMatch] = useState<User | null>(null);
+  const [revealProfile, setRevealProfile] = useState<User | null>(null);
 
   const currentUserProfileRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'user_profiles', user.uid) : null, [firestore, user]);
+  const currentUserDataRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
   const { data: currentUserProfile, isLoading: isCurrentUserProfileLoading } = useDoc<User>(currentUserProfileRef);
+  const { data: currentUserData } = useDoc<{ explicitContentOptIn?: boolean }>(currentUserDataRef);
   const oauthProfileCreatedRef = useRef(false);
 
   const subscriptionRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'subscriptions', user.uid) : null, [firestore, user]);
@@ -268,10 +295,14 @@ export default function DashboardPage() {
   const handleAction = async (direction: 'like' | 'dislike', likeType?: 'like' | 'super_like' | 'rose') => {
     if (userStack.length === 0 || !user || !firestore) return;
     const topUser = userStack[userStack.length - 1];
-    setUserStack(userStack.slice(0, userStack.length - 1));
 
     if (direction === 'dislike') {
-      setLastDislikedProfile(topUser);
+      setExitDirection(-1);
+      setTimeout(() => {
+        setUserStack(prev => prev.slice(0, prev.length - 1));
+        setExitDirection(0);
+        setLastDislikedProfile(topUser);
+      }, 380);
       return;
     }
 
@@ -280,39 +311,52 @@ export default function DashboardPage() {
       const balance = creditBalance?.balance ?? 0;
       if (balance < ROSE_CREDITS_COST) {
         toast({ variant: 'destructive', title: t('dashboard.noCredits'), description: t('dashboard.roseNeedsCredits') });
-        setUserStack(prev => [...prev, topUser]);
         return;
       }
     } else if (!isPremium) {
       if (effectiveType === 'super_like' && todaySuperLikesCount >= DAILY_SUPER_LIKE_LIMIT_FREE) {
         toast({ variant: 'destructive', title: t('dashboard.superLikeLimit'), description: t('dashboard.superLikeLimitDesc') });
-        setUserStack(prev => [...prev, topUser]);
         return;
       }
       if (effectiveType === 'like' && todayLikesCount >= DAILY_LIKE_LIMIT_FREE) {
         toast({ variant: 'destructive', title: t('dashboard.likeLimit'), description: t('dashboard.likeLimitDesc') });
-        setUserStack(prev => [...prev, topUser]);
         return;
       }
     }
 
-    try {
-      const likesRef = collection(firestore, 'likes');
-      await addDoc(likesRef, { swiperId: user.uid, swipedId: topUser.id, createdAt: serverTimestamp(), type: effectiveType });
-      if (effectiveType === 'rose' && creditBalanceRef) {
-        await updateDoc(creditBalanceRef, { balance: Math.max(0, (creditBalance?.balance ?? 0) - ROSE_CREDITS_COST) });
+    setExitDirection(1);
+    setTimeout(async () => {
+      setUserStack(prev => prev.slice(0, prev.length - 1));
+      setExitDirection(0);
+      try {
+        const likesRef = collection(firestore, 'likes');
+        await addDoc(likesRef, { swiperId: user.uid, swipedId: topUser.id, createdAt: serverTimestamp(), type: effectiveType });
+        if (effectiveType === 'rose' && creditBalanceRef) {
+          await updateDoc(creditBalanceRef, { balance: Math.max(0, (creditBalance?.balance ?? 0) - ROSE_CREDITS_COST) });
+        }
+        const q = query(likesRef, where('swiperId', '==', topUser.id), where('swipedId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const isSituationship = currentUserProfile?.relationshipStatus === 'situationship' || topUser.relationshipStatus === 'situationship';
+          const matchData: { user1Id: string; user2Id: string; matchedAt: any; expiresAt?: any } = {
+            user1Id: user.uid,
+            user2Id: topUser.id,
+            matchedAt: serverTimestamp(),
+          };
+          if (isSituationship) {
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7);
+            matchData.expiresAt = Timestamp.fromDate(expiresAt);
+          }
+          await addDoc(collection(firestore, 'matches'), matchData);
+          setNewMatch(topUser);
+        }
+      } catch (e) {
+        console.error("Error liking user: ", e);
+        toast({ variant: 'destructive', title: t('dashboard.likeError'), description: t('dashboard.likeErrorDesc') });
+        setUserStack(prev => [...prev, topUser]);
       }
-      const q = query(likesRef, where('swiperId', '==', topUser.id), where('swipedId', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        await addDoc(collection(firestore, 'matches'), { user1Id: user.uid, user2Id: topUser.id, matchedAt: serverTimestamp() });
-        setNewMatch(topUser);
-      }
-    } catch (e) {
-      console.error("Error liking user: ", e);
-      toast({ variant: 'destructive', title: t('dashboard.likeError'), description: t('dashboard.likeErrorDesc') });
-      setUserStack(prev => [...prev, topUser]);
-    }
+    }, 380);
   };
 
   const handleRewind = () => {
@@ -393,11 +437,11 @@ export default function DashboardPage() {
                             </Select>
                         </div>
                         <div className="grid grid-cols-3 items-center gap-4">
-                            <Label>Distance</Label>
+                            <Label>{t('dashboard.distance')}</Label>
                             <Select value={String(filters.distanceKm)} onValueChange={(v) => setFilters(f => ({...f, distanceKm: Number(v)}))}><SelectTrigger className="col-span-2 h-8"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="0">Any</SelectItem>
-                                    {DISTANCE_OPTIONS_KM.filter(k => k > 0).map(k => <SelectItem key={k} value={String(k)}>Within {k} km</SelectItem>)}
+                                    <SelectItem value="0">{t('common.any')}</SelectItem>
+                                    {DISTANCE_OPTIONS_KM.filter(k => k > 0).map(k => <SelectItem key={k} value={String(k)}>{t('dashboard.withinKm', { km: k })}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -409,7 +453,18 @@ export default function DashboardPage() {
         <div className="relative flex-grow w-full max-w-sm mx-auto">
           {userStack.length > 0 ? (
             <AnimatePresence>
-              {userStack.map((u) => <UserCard key={u.id} user={u} currentUserProfile={currentUserProfile} onLike={() => handleAction('like')} onDislike={() => handleAction('dislike')} />)}
+              {userStack.map((u, i) => (
+                <UserCard
+                  key={u.id}
+                  user={u}
+                  currentUserProfile={currentUserProfile}
+                  onLike={() => handleAction('like')}
+                  onDislike={() => handleAction('dislike')}
+                  onRevealClick={() => setRevealProfile(u)}
+                  exitDirection={i === userStack.length - 1 ? exitDirection : 0}
+                  stackIndex={i}
+                />
+              ))}
             </AnimatePresence>
           ) : (
             <Card className="h-full w-full flex items-center justify-center bg-secondary">
@@ -422,26 +477,54 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex justify-center items-center gap-2 sm:gap-4 mt-8 flex-wrap">
-          <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-amber-500 text-amber-500 hover:bg-amber-100" onClick={() => handleAction('dislike')} disabled={userStack.length === 0} title={t('dashboard.dislike')}><X className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
-          <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-blue-500 text-blue-500 hover:bg-blue-100" onClick={handleRewind} disabled={!lastDislikedProfile} title={t('dashboard.rewind')}><RefreshCcw className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
-          <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-purple-500 text-purple-500 hover:bg-purple-100" onClick={() => handleAction('like', 'super_like')} disabled={userStack.length === 0 || (!isPremium && todaySuperLikesCount >= DAILY_SUPER_LIKE_LIMIT_FREE)} title={t('dashboard.superLike')}><Star className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
-          <Button variant="outline" size="icon" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-primary text-primary hover:bg-primary/10" onClick={() => handleAction('like')} disabled={userStack.length === 0 || (!isPremium && todayLikesCount >= DAILY_LIKE_LIMIT_FREE)} title={t('dashboard.like')}><Heart className="w-8 h-8 sm:w-10 sm:h-10" /></Button>
-          <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-pink-500 text-pink-500 hover:bg-pink-100" onClick={() => handleAction('like', 'rose')} disabled={userStack.length === 0 || (creditBalance?.balance ?? 0) < ROSE_CREDITS_COST} title={t('dashboard.rose')}><Flower2 className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
+          <motion.div whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-amber-500 text-amber-500 hover:bg-amber-100 active:scale-95 transition-shadow" onClick={() => handleAction('dislike')} disabled={userStack.length === 0} title={t('dashboard.dislike')}><X className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
+          </motion.div>
+          <motion.div whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-blue-500 text-blue-500 hover:bg-blue-100" onClick={handleRewind} disabled={!lastDislikedProfile} title={t('dashboard.rewind')}><RefreshCcw className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
+          </motion.div>
+          <motion.div whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-purple-500 text-purple-500 hover:bg-purple-100" onClick={() => handleAction('like', 'super_like')} disabled={userStack.length === 0 || (!isPremium && todaySuperLikesCount >= DAILY_SUPER_LIKE_LIMIT_FREE)} title={t('dashboard.superLike')}><Star className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
+          </motion.div>
+          <motion.div whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Button variant="outline" size="icon" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-primary text-primary hover:bg-primary/10 shadow-card" onClick={() => handleAction('like')} disabled={userStack.length === 0 || (!isPremium && todayLikesCount >= DAILY_LIKE_LIMIT_FREE)} title={t('dashboard.like')}><Heart className="w-8 h-8 sm:w-10 sm:h-10" /></Button>
+          </motion.div>
+          <motion.div whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <Button variant="outline" size="icon" className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-pink-500 text-pink-500 hover:bg-pink-100" onClick={() => handleAction('like', 'rose')} disabled={userStack.length === 0 || (creditBalance?.balance ?? 0) < ROSE_CREDITS_COST} title={t('dashboard.rose')}><Flower2 className="w-7 h-7 sm:w-8 sm:h-8" /></Button>
+          </motion.div>
         </div>
         {!isPremium && (creditBalance?.balance ?? 0) >= ROSE_CREDITS_COST && <p className="text-xs text-center text-muted-foreground mt-2">{t('dashboard.credits', { count: creditBalance?.balance ?? 0 })}</p>}
       </div>
       
+      {revealProfile && user && currentUserProfile && (
+        <ProfileRevealDialog
+          profile={revealProfile}
+          currentUserId={user.uid}
+          open={!!revealProfile}
+          onOpenChange={(open) => !open && setRevealProfile(null)}
+          isPremium={!!subscription?.planType && subscription.planType === 'premium'}
+          credits={creditBalance?.balance ?? 0}
+          currentUserExplicitOptIn={!!(currentUserData?.explicitContentOptIn ?? currentUserProfile?.explicitContentOptIn)}
+          isMatch={false}
+        />
+      )}
+
       {newMatch && user && (
         <AlertDialog open={!!newMatch} onOpenChange={() => setNewMatch(null)}>
-            <AlertDialogContent>
+            <AlertDialogContent className="overflow-hidden">
                 <AlertDialogHeader className="items-center">
-                    <AlertDialogTitle className="text-3xl font-headline text-primary">{t('dashboard.itsAMatch')}</AlertDialogTitle>
-                    <AlertDialogDescription>{t('dashboard.matchDescription', { name: newMatch.name || '' })}</AlertDialogDescription>
+                    <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 24, delay: 0.05 }}>
+                      <AlertDialogTitle className="text-3xl font-headline text-primary">{t('dashboard.itsAMatch')}</AlertDialogTitle>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+                      <AlertDialogDescription>{t('dashboard.matchDescription', { name: newMatch.name || '' })}</AlertDialogDescription>
+                    </motion.div>
                 </AlertDialogHeader>
-                <div className="flex justify-center items-center gap-4 my-4">
-                    <Avatar className="w-24 h-24 border-4 border-white"><AvatarImage src={user.photoURL || ''} /><AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                    <Avatar className="w-24 h-24 border-4 border-white"><AvatarImage src={newMatch.images?.[0]} /><AvatarFallback>{newMatch.name?.charAt(0)}</AvatarFallback></Avatar>
-                </div>
+                <motion.div className="flex justify-center items-center gap-4 my-4" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 22, delay: 0.1 }}>
+                    <motion.div whileHover={{ scale: 1.05 }}><Avatar className="w-24 h-24 border-4 border-primary/30 shadow-glow-primary"><AvatarImage src={user.photoURL || ''} /><AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar></motion.div>
+                    <motion.span className="text-2xl" animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}>❤️</motion.span>
+                    <motion.div whileHover={{ scale: 1.05 }}><Avatar className="w-24 h-24 border-4 border-primary/30 shadow-glow-primary"><AvatarImage src={newMatch.images?.[0]} /><AvatarFallback>{newMatch.name?.charAt(0)}</AvatarFallback></Avatar></motion.div>
+                </motion.div>
                 <AlertDialogFooter className="sm:justify-center">
                     <AlertDialogCancel onClick={() => setNewMatch(null)}>{t('dashboard.keepSwiping')}</AlertDialogCancel>
                     <AlertDialogAction onClick={() => router.push(`/chat/${newMatch.id}`)}>{t('dashboard.sendMessage')}</AlertDialogAction>

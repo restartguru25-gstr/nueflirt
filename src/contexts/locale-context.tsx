@@ -23,7 +23,7 @@ type LocaleContextValue = {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<LocaleCode>(getStoredLocale);
+  const [locale, setLocaleState] = useState<LocaleCode>('en');
 
   const setLocale = useCallback((next: LocaleCode) => {
     setLocaleState(next);
@@ -32,12 +32,21 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) => {
-      return tHelper(messages[locale], key, params);
+      const str = tHelper(messages[locale], key, params);
+      if (locale !== 'en' && str === key) {
+        return tHelper(messages.en, key, params);
+      }
+      return str;
     },
     [locale]
   );
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+
+  // Hydrate locale from storage after mount (avoids server/client mismatch)
+  React.useEffect(() => {
+    setLocaleState(getStoredLocale());
+  }, []);
 
   // Sync document language for accessibility and RTL if needed later
   React.useEffect(() => {

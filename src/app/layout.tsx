@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { LocaleProvider } from '@/contexts/locale-context';
+import { PwaRegister } from '@/components/pwa-register';
 
 const APP_NAME = "Nue Flirt";
 const APP_DESCRIPTION = "Find your spark with AI-powered dating.";
@@ -44,6 +45,7 @@ export default function RootLayout({
       <body className={cn("font-body antialiased", "min-h-screen bg-background font-sans")}>
         <FirebaseClientProvider>
           <LocaleProvider>
+            <PwaRegister />
             {children}
           </LocaleProvider>
         </FirebaseClientProvider>

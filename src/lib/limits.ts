@@ -10,3 +10,10 @@ export const DEFAULT_AGE_MIN = 18;
 export const DEFAULT_AGE_MAX = 99;
 /** Days after last message before a time-limited chat expires (if enabled). */
 export const CHAT_EXPIRY_DAYS = 7;
+/** Cost in credits to extend a situationship match by 7 days. */
+export const EXTEND_MATCH_CREDITS = 5;
+/** Days added when extending a situationship match. */
+export const SITUATIONSHIP_EXTEND_DAYS = 7;
+
+/** Cost in credits to view a progressive reveal (full video). */
+export const REVEAL_CREDITS_COST = 3;

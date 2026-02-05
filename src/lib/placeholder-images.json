@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "landing-hero",
-      "description": "A vibrant, abstract representation of digital connection and romance",
-      "imageUrl": "https://images.unsplash.com/photo-1738082956257-06cde4444b1c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMGNvbm5lY3Rpb258ZW58MHx8fHwxNzcwMjM2NDEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract connection"
+      "description": "A couple embracing outdoors in golden sunlight, representing connection and romance",
+      "imageUrl": "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+      "imageHint": "couple romance connection"
     },
     {
       "id": "user-1",

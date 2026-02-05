@@ -30,6 +30,8 @@ import {
   indianRegions,
   indianCommunities,
   casteOptions,
+  relationshipStatusOptions,
+  relationshipStatusLabels,
   zodiacSigns,
   orientationOptions,
   pronounOptions,
@@ -91,6 +93,7 @@ const formSchema = z.object({
   job: z.string().optional(),
   drinking: z.string().optional(),
   exercise: z.string().optional(),
+  relationshipStatus: z.string().optional(),
 }).refine(data => {
   const [day, month, year] = data.dob.split('/').map(Number);
   const dobDate = new Date(year, month - 1, day);
@@ -131,6 +134,7 @@ export default function SignupPage() {
       job: "",
       drinking: "",
       exercise: "",
+      relationshipStatus: "",
     },
   })
 
@@ -190,6 +194,7 @@ export default function SignupPage() {
         job: values.job || "",
         drinking: values.drinking || "",
         exercise: values.exercise || "",
+        relationshipStatus: values.relationshipStatus || undefined,
       }
 
       const userRef = doc(firestore, "users", user.uid);
@@ -450,6 +455,26 @@ export default function SignupPage() {
                     </FormControl>
                     <SelectContent>
                       {casteOptions.filter(c => c !== 'Any').map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="relationshipStatus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Relationship status <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {relationshipStatusOptions.map(s => <SelectItem key={s} value={s}>{relationshipStatusLabels[s] ?? s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <FormMessage />

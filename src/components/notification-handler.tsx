@@ -60,12 +60,7 @@ export function NotificationHandler() {
 
           if (senderProfile) {
             toast({
-              title: (
-                <div className="flex items-center gap-2 font-bold">
-                  <Avatar className="h-8 w-8"><AvatarImage src={senderProfile.images?.[0]} /><AvatarFallback>{senderProfile.name.charAt(0)}</AvatarFallback></Avatar>
-                  New message from {senderProfile.name}
-                </div>
-              ),
+              title: `New message from ${senderProfile.name}`,
               description: lastMessage.text,
               action: <ToastAction altText="View" onClick={() => router.push(`/chat/${senderId}`)}>View</ToastAction>,
             });

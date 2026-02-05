@@ -5,6 +5,21 @@ export const indianCommunities = ["Hindu", "Muslim", "Christian", "Sikh", "Buddh
 /** Optional caste filter; "Prefer not to say" and "Other" for privacy. */
 export const casteOptions = ["Any", "Prefer not to say", "General", "OBC", "SC", "ST", "Other"];
 export const datingIntents = ["Casual", "Serious", "Marriage", "Figuring it out"];
+
+/** Relationship status: for Legacy Mode and Fluid Vibes. */
+/** Lowercase for Firestore; display uses capitalized. */
+export const relationshipStatusOptions = ["single", "married", "widowed", "divorced", "situationship"] as const;
+export type RelationshipStatusOption = (typeof relationshipStatusOptions)[number];
+export const relationshipStatusLabels: Record<string, string> = {
+  single: "Single",
+  married: "Married",
+  widowed: "Widowed",
+  divorced: "Divorced",
+  situationship: "Situationship",
+};
+
+/** Vibe filters for Fluid Vibes Zone. */
+export const vibeFilterOptions = ["Flirty", "Chill", "Adventurous", "Romantic", "Playful", "Deep"] as const;
 export const allInterests = ["Reading", "Traveling", "Movies", "Foodie", "Music", "Art", "Gaming", "Sports", "Fitness", "Dancing", "Photography", "Writing", "Volunteering", "Yoga", "Hiking"];
 export const zodiacSigns = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
 export const petOptions = ["Dog Person", "Cat Person", "Both", "No Pets", "All the pets"];

@@ -4,15 +4,22 @@ import { useEffect, useMemo } from 'react';
 import { AppLayout } from '@/components/app-layout';
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { collection, query, orderBy, doc, serverTimestamp } from 'firebase/firestore';
-import type { AppEvent, EventRsvp } from '@/types';
+import { collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import type { AppEvent, EventRsvp, EventType } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, MapPin, Video, Sparkles, ShieldCheck } from 'lucide-react';
 import { useLocale } from '@/contexts/locale-context';
 import { addDocumentNonBlocking } from '@/firebase';
 import { format } from 'date-fns';
+
+const EVENT_TYPE_LABELS: Record<EventType | string, { label: string; icon: React.ReactNode }> = {
+  virtual_mixer: { label: 'Virtual Happy Hour', icon: <Video className="h-3.5 w-3.5" /> },
+  zodiac_night: { label: 'Zodiac Night', icon: <Sparkles className="h-3.5 w-3.5" /> },
+  legacy_meetup: { label: 'Legacy Meetup', icon: <ShieldCheck className="h-3.5 w-3.5" /> },
+  general: { label: 'Event', icon: <Calendar className="h-3.5 w-3.5" /> },
+};
 
 export default function EventsPage() {
     const router = useRouter();
@@ -57,6 +64,7 @@ export default function EventsPage() {
                         {t('events.title')}
                     </h1>
                     <p className="text-muted-foreground mt-1">{t('events.subtitle')}</p>
+                    <p className="text-sm text-muted-foreground mt-2">Virtual happy hours, zodiac-themed nights, and legacy-mode meetups coming soon.</p>
                 </div>
 
                 {events && events.length > 0 ? (
@@ -67,7 +75,15 @@ export default function EventsPage() {
                             return (
                                 <Card key={ev.id}>
                                     <CardHeader className="pb-2">
-                                        <CardTitle className="text-xl">{ev.title}</CardTitle>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <CardTitle className="text-xl">{ev.title}</CardTitle>
+                                            {ev.eventType && (
+                                              <Badge variant="secondary" className="text-xs">
+                                                {EVENT_TYPE_LABELS[ev.eventType]?.icon}
+                                                <span className="ml-1">{EVENT_TYPE_LABELS[ev.eventType]?.label ?? ev.eventType}</span>
+                                              </Badge>
+                                            )}
+                                        </div>
                                         <CardDescription>{ev.description}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
@@ -105,12 +121,25 @@ export default function EventsPage() {
                         })}
                     </div>
                 ) : (
-                    <Card>
-                        <CardContent className="py-12 text-center text-muted-foreground">
-                            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>{t('events.noEvents')}</p>
-                        </CardContent>
-                    </Card>
+                    <div className="space-y-4">
+                        <Card>
+                            <CardContent className="py-12 text-center text-muted-foreground">
+                                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>{t('events.noEvents')}</p>
+                            </CardContent>
+                        </Card>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {(['virtual_mixer', 'zodiac_night', 'legacy_meetup'] as const).map((tpe) => (
+                                <Card key={tpe} className="border-dashed opacity-80">
+                                    <CardContent className="py-6 text-center">
+                                        {EVENT_TYPE_LABELS[tpe].icon}
+                                        <p className="font-medium mt-2">{EVENT_TYPE_LABELS[tpe].label}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Coming soon</p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
                 )}
             </div>
         </AppLayout>

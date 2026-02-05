@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Like, User, Subscription } from "@/types";
 import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
-import { Crown, Heart } from "lucide-react";
+import { Crown, Heart, Lock } from "lucide-react";
 
 function LikedUserCard({ profile, like }: { profile: User; like: Like }) {
   const likedAt = like.createdAt?.toDate ? formatDistanceToNow(like.createdAt.toDate(), { addSuffix: true }) : 'recently';
@@ -33,6 +33,22 @@ function LikedUserCard({ profile, like }: { profile: User; like: Like }) {
   );
 }
 
+/** Blurred/teased card for free users. */
+function TeasedLikeCard({ index }: { index: number }) {
+  return (
+    <Card className="overflow-hidden aspect-[3/4] relative">
+      <div className="absolute inset-0 bg-muted blur-xl scale-110" />
+      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+        <Lock className="h-12 w-12 text-white/60" />
+      </div>
+      <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+        <p className="text-sm font-medium text-white/90">Someone likes you</p>
+        <p className="text-xs text-white/70">Upgrade to see who</p>
+      </div>
+    </Card>
+  );
+}
+
 export default function LikesYouPage() {
     const router = useRouter();
     const { user: authUser, isUserLoading } = useUser();
@@ -49,13 +65,13 @@ export default function LikesYouPage() {
     const isPremium = subscription?.planType === 'premium';
 
     const likesQuery = useMemoFirebase(() => {
-        if (!firestore || !authUser || !isPremium) return null;
+        if (!firestore || !authUser) return null;
         return query(
             collection(firestore, 'likes'), 
             where('swipedId', '==', authUser.uid),
             orderBy('createdAt', 'desc')
         );
-    }, [firestore, authUser, isPremium]);
+    }, [firestore, authUser]);
 
     const { data: likes, isLoading: likesLoading } = useCollection<Like>(likesQuery);
 
@@ -65,9 +81,9 @@ export default function LikesYouPage() {
     }, [likes]);
 
     const profilesQuery = useMemoFirebase(() => {
-        if (!firestore || likerIds.length === 0) return null;
+        if (!firestore || likerIds.length === 0 || !isPremium) return null;
         return query(collection(firestore, 'user_profiles'), where('id', 'in', likerIds.slice(0, 30)));
-    }, [firestore, likerIds]);
+    }, [firestore, likerIds, isPremium]);
 
     const { data: likerProfiles, isLoading: profilesLoading } = useCollection<User>(profilesQuery);
 
@@ -76,22 +92,43 @@ export default function LikesYouPage() {
         return new Map(likerProfiles.map(p => [p.id, p]));
     }, [likerProfiles]);
 
-    const isLoading = isUserLoading || isSubscriptionLoading || (isPremium && likesLoading) || (isPremium && likerIds.length > 0 && profilesLoading);
+    const isLoading = isUserLoading || isSubscriptionLoading || likesLoading || (isPremium && likerIds.length > 0 && profilesLoading);
 
     if (isLoading) {
         return <AppLayout><div className="flex justify-center items-center h-full">Loading...</div></AppLayout>;
     }
 
+    /** Free users: show count + blurred/teased cards. Premium: full details. */
     if (!isPremium) {
+        const count = likes?.length ?? 0;
         return (
             <AppLayout>
-                <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                    <Crown className="h-16 w-16 text-amber-400 mb-4" />
-                    <h2 className="text-2xl font-bold font-headline">See Who Likes You</h2>
-                    <p className="text-muted-foreground mt-2 max-w-md">This is a premium feature. Upgrade your account to see everyone who has already liked your profile.</p>
-                    <Button asChild className="mt-6">
-                        <Link href="/subscribe">Upgrade to Premium</Link>
-                    </Button>
+                <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold font-headline">Who Likes You</h1>
+                            <p className="text-muted-foreground mt-1">
+                                {count > 0 ? `${count} ${count === 1 ? 'person likes' : 'people like'} you. Upgrade to see who and start chatting.` : 'People who like you will appear here. Upgrade to see them.'}
+                            </p>
+                        </div>
+                        <Button asChild className="shrink-0">
+                            <Link href="/subscribe"><Crown className="h-4 w-4 mr-2" />Upgrade to Premium</Link>
+                        </Button>
+                    </div>
+                    {count > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            {likes!.map((_, i) => <TeasedLikeCard key={i} index={i} />)}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg text-center">
+                            <Heart className="h-12 w-12 text-muted-foreground" />
+                            <p className="mt-4 text-lg font-semibold">No likes yet.</p>
+                            <p className="text-sm text-muted-foreground">People who like you will appear here. Upgrade to see who.</p>
+                            <Button asChild className="mt-4">
+                                <Link href="/subscribe"><Crown className="h-4 w-4 mr-2" />Upgrade to Premium</Link>
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </AppLayout>
         );

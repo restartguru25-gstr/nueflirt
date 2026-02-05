@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Loader, Sparkles, Upload, Crown, Coins, Trash2, PlusCircle, ShieldCheck, Check, X, Zap } from 'lucide-react';
+import { Edit, Loader, Sparkles, Upload, Crown, Coins, Trash2, PlusCircle, ShieldCheck, Check, X, Zap, Eye } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,7 @@ import { doc, serverTimestamp } from 'firebase/firestore';
 import type { User, PromptAnswer, Subscription, CreditBalance } from '@/types';
 import { generateAiAvatar } from '@/ai/flows/ai-avatar-creation';
 import { generateProfileVideo } from '@/ai/flows/ai-profile-video-generation';
+import { suggestBio } from '@/ai/flows/ai-bio-suggestion';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { profilePrompts } from '@/lib/prompts';
@@ -25,13 +26,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { indianLanguages, indianRegions, indianCommunities, casteOptions, datingIntents, allInterests, zodiacSigns, petOptions, smokingOptions, kidsOptions, orientationOptions, pronounOptions, heightOptions, educationOptions, drinkingOptions, exerciseOptions } from '@/lib/profile-options';
+import { indianLanguages, indianRegions, indianCommunities, casteOptions, datingIntents, relationshipStatusOptions, relationshipStatusLabels, allInterests, zodiacSigns, petOptions, smokingOptions, kidsOptions, orientationOptions, pronounOptions, heightOptions, educationOptions, drinkingOptions, exerciseOptions } from '@/lib/profile-options';
 import { useLocale } from '@/contexts/locale-context';
 import { useOfflineMyProfile } from '@/hooks/use-offline';
 import { getCurrentPosition } from '@/lib/geo';
 import { getZodiacMatchTagline } from '@/lib/zodiac';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { Bell } from 'lucide-react';
+import { ProfileRevealDialog } from '@/components/profile-reveal-dialog';
 
 
 function PromptEditor({ prompts, onPromptsChange, onSave }: { prompts: PromptAnswer[], onPromptsChange: (prompts: PromptAnswer[]) => void, onSave: () => void }) {
@@ -202,6 +204,8 @@ export default function ProfilePage() {
     const { data: credits, isLoading: creditsLoading } = useDoc<CreditBalance>(creditsRef);
 
     const [isGenerating, setIsGenerating] = useState<'avatar' | 'video' | null>(null);
+    const [isSuggestingBio, setIsSuggestingBio] = useState(false);
+    const [showRevealDialog, setShowRevealDialog] = useState(false);
     const [generatedAvatar, setGeneratedAvatar] = useState<string | null>(null);
     const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
     const [bio, setBio] = useState('');
@@ -231,6 +235,9 @@ export default function ProfilePage() {
     const [exercise, setExercise] = useState('');
     const [ageRangeMin, setAgeRangeMin] = useState<number>(18);
     const [ageRangeMax, setAgeRangeMax] = useState<number>(99);
+    const [relationshipStatus, setRelationshipStatus] = useState<string>('');
+    const [legacyModeOptIn, setLegacyModeOptIn] = useState(false);
+    const [legacyAnonymizeAvatar, setLegacyAnonymizeAvatar] = useState(false);
 
     const trustScore = useMemo(() => {
         if (!userProfile) return 0;
@@ -272,13 +279,26 @@ export default function ProfilePage() {
             setExercise(userProfile.exercise || '');
             setAgeRangeMin(userProfile.ageRangeMin ?? 18);
             setAgeRangeMax(userProfile.ageRangeMax ?? 99);
+            setRelationshipStatus(userProfile.relationshipStatus ?? '');
+            setLegacyModeOptIn(userProfile.legacyModeOptIn ?? false);
+            setLegacyAnonymizeAvatar(userProfile.legacyAnonymizeAvatar ?? false);
         }
     }, [userProfile]);
 
     const handleProfileFilterSave = () => {
         if (userProfileRef) {
-            updateDocumentNonBlocking(userProfileRef, { language, region, community, caste: caste || undefined, datingIntent });
+            const payload: Record<string, unknown> = { language, region, community, datingIntent };
+            if (caste.trim() !== '') payload.caste = caste; else payload.caste = null;
+            if (relationshipStatus && relationshipStatus.trim() !== '') payload.relationshipStatus = relationshipStatus; else payload.relationshipStatus = null;
+            updateDocumentNonBlocking(userProfileRef, payload);
             toast({ title: t('profile.preferencesSaved') });
+        }
+    };
+
+    const handleLegacyModeSave = () => {
+        if (userProfileRef) {
+            updateDocumentNonBlocking(userProfileRef, { legacyModeOptIn, legacyAnonymizeAvatar });
+            toast({ title: 'Legacy mode saved' });
         }
     };
 
@@ -411,6 +431,26 @@ export default function ProfilePage() {
         }
     };
 
+    const handleSuggestBio = async () => {
+        if (!userProfile?.name) return;
+        setIsSuggestingBio(true);
+        try {
+            const suggestion = await suggestBio({
+                name: userProfile.name,
+                bio: bio || undefined,
+                interests: interests.length ? interests : undefined,
+                promptAnswers: prompts.filter(p => p.answer.trim()).length ? prompts : undefined,
+            });
+            setBio(suggestion);
+            toast({ title: "AI suggestion applied", description: "Tweak if you'd like and save." });
+        } catch (e) {
+            console.error(e);
+            toast({ variant: "destructive", title: "Could not generate suggestion" });
+        } finally {
+            setIsSuggestingBio(false);
+        }
+    };
+
     const handleExplicitContentToggle = (checked: boolean) => {
         if (userRef) updateDocumentNonBlocking(userRef, { explicitContentOptIn: checked });
     };
@@ -441,6 +481,8 @@ export default function ProfilePage() {
         });
       };
     
+    const profileForReveal: User = userProfile ? { ...userProfile, id: user?.uid ?? userProfile.id, images: images.length ? images : userProfile.images } : null as unknown as User;
+
     const isLoading = isUserLoading || profileLoadingFinal || userLoading || subscriptionLoading || creditsLoading;
 
     if (isLoading) return <AppLayout><div>Loading profile...</div></AppLayout>;
@@ -494,7 +536,13 @@ export default function ProfilePage() {
                                 </Button>
                             </CardHeader>
                             <CardContent className='space-y-2'>
-                                <Textarea placeholder="Your bio..." value={bio} onChange={(e) => setBio(e.target.value)} />
+                                <div className="flex gap-2">
+                                    <Textarea placeholder="Your bio..." value={bio} onChange={(e) => setBio(e.target.value)} className="flex-1 min-h-[80px]" />
+                                    <Button variant="outline" size="icon" className="shrink-0 h-10 w-10" onClick={handleSuggestBio} disabled={isSuggestingBio} title="AI suggest bio">
+                                        {isSuggestingBio ? <Loader className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-primary" />}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Use <Sparkles className="inline h-3 w-3" /> to get AI bio suggestions based on your profile.</p>
                                 <Button onClick={handleBioSave} size="sm" className="w-full">Save Bio</Button>
                             </CardContent>
                         </Card>
@@ -569,6 +617,20 @@ export default function ProfilePage() {
                             </CardContent>
                         </Card>
 
+                        {userData?.explicitContentOptIn && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><Eye className="h-5 w-5"/> Progressive Reveal</CardTitle>
+                                    <CardDescription>Generate a teaser and reveal video for matches. Requires ComfyUI/RunPod backend.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button variant="outline" className="w-full" onClick={() => setShowRevealDialog(true)}>
+                                        <Eye className="mr-2 h-4 w-4" /> Preview &amp; Generate Reveal
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5"/> Push Notifications</CardTitle>
@@ -622,11 +684,48 @@ export default function ProfilePage() {
                                         <SelectContent>{casteOptions.filter(c => c !== 'Any').map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </div>
+                                <div className="space-y-2">
+                                    <Label>Relationship status</Label>
+                                    <Select value={relationshipStatus} onValueChange={setRelationshipStatus}>
+                                        <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                                        <SelectContent>{relationshipStatusOptions.map(s => <SelectItem key={s} value={s}>{relationshipStatusLabels[s] ?? s}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
                             </CardContent>
                             <CardFooter>
                                 <Button onClick={handleProfileFilterSave} className="w-full">{t('profile.savePreferences')}</Button>
                             </CardFooter>
                         </Card>
+
+                        {['married', 'widowed', 'divorced'].includes(relationshipStatus) && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Discreet Legacy Mode</CardTitle>
+                                    <CardDescription>Private matching pool and privacy options. Premium required to use.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="legacy-mode">Enable Legacy Mode</Label>
+                                        <Switch id="legacy-mode" checked={legacyModeOptIn} onCheckedChange={setLegacyModeOptIn} />
+                                    </div>
+                                    {legacyModeOptIn && (
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="legacy-anonymize">Anonymize my avatars/videos (blur face)</Label>
+                                            <Switch id="legacy-anonymize" checked={legacyAnonymizeAvatar} onCheckedChange={setLegacyAnonymizeAvatar} />
+                                        </div>
+                                    )}
+                                    {legacyModeOptIn && subscription?.planType !== 'premium' && (
+                                        <p className="text-sm text-amber-600 dark:text-amber-400">Upgrade to Premium to access the Legacy tab and private pool.</p>
+                                    )}
+                                </CardContent>
+                                <CardFooter>
+                                    <Button onClick={handleLegacyModeSave} className="w-full">Save Legacy settings</Button>
+                                    {legacyModeOptIn && subscription?.planType === 'premium' && (
+                                        <Link href="/legacy" className="w-full mt-2"><Button variant="outline" className="w-full">Open Legacy tab</Button></Link>
+                                    )}
+                                </CardFooter>
+                            </Card>
+                        )}
 
                         <Card>
                             <CardHeader>
@@ -802,6 +901,7 @@ export default function ProfilePage() {
                                                 <SelectItem value="modern">Modern</SelectItem>
                                                 <SelectItem value="traditional Indian">Traditional Indian</SelectItem>
                                                 <SelectItem value="cinematic">Cinematic</SelectItem>
+                                                {legacyModeOptIn && <SelectItem value="legacy_mature">Legacy (mature style)</SelectItem>}
                                             </SelectContent>
                                         </Select>
                                         <Button className="w-full" onClick={handleGenerateVideo} disabled={!!isGenerating}>
@@ -863,6 +963,19 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {profileForReveal && user && showRevealDialog && (
+                <ProfileRevealDialog
+                    profile={profileForReveal}
+                    currentUserId={user.uid}
+                    open={showRevealDialog}
+                    onOpenChange={setShowRevealDialog}
+                    isPremium={subscription?.planType === 'premium'}
+                    credits={credits?.balance ?? 0}
+                    currentUserExplicitOptIn={!!userData?.explicitContentOptIn}
+                    isMatch={false}
+                />
+            )}
         </AppLayout>
     );
 }
