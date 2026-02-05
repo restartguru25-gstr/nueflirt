@@ -1,0 +1,82 @@
+{
+  "placeholderImages": [
+    {
+      "id": "landing-hero",
+      "description": "A vibrant, abstract representation of digital connection and romance",
+      "imageUrl": "https://images.unsplash.com/photo-1738082956257-06cde4444b1c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMGNvbm5lY3Rpb258ZW58MHx8fHwxNzcwMjM2NDEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract connection"
+    },
+    {
+      "id": "user-1",
+      "description": "A smiling Indian woman with long dark hair, in a casual setting.",
+      "imageUrl": "https://images.unsplash.com/photo-1509839862600-309617c3201e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxpbmRpYW4lMjB3b21hbnxlbnwwfHx8fDE3NzAyMzY0MTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "indian woman"
+    },
+    {
+      "id": "user-2",
+      "description": "A man with a well-groomed beard, wearing a stylish jacket in an urban environment.",
+      "imageUrl": "https://images.unsplash.com/photo-1607081692251-d689f1b9af84?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxpbmRpYW4lMjBtYW58ZW58MHx8fHwxNzcwMTE4NDc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "indian man"
+    },
+    {
+      "id": "user-3",
+      "description": "A woman in traditional Indian attire, smiling warmly.",
+      "imageUrl": "https://images.unsplash.com/photo-1586434722766-b46308f072ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx0cmFkaXRpb25hbCUyMHdvbWFufGVufDB8fHx8MTc3MDIzNjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "traditional woman"
+    },
+    {
+      "id": "user-4",
+      "description": "A young man laughing, with a blurred background of a cafe.",
+      "imageUrl": "https://images.unsplash.com/photo-1618769122190-ee85526fd40b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYW4lMjBsYXVnaGluZ3xlbnwwfHx8fDE3NzAyMzY0MTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man laughing"
+    },
+    {
+      "id": "user-5",
+      "description": "A woman with short hair and glasses, posing against a colorful wall.",
+      "imageUrl": "https://images.unsplash.com/photo-1524255684952-d7185b509571?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3b21hbiUyMGdsYXNzZXN8ZW58MHx8fHwxNzcwMTc2MjkzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman glasses"
+    },
+    {
+      "id": "user-6",
+      "description": "A fitness enthusiast man showing his muscles after a workout.",
+      "imageUrl": "https://images.unsplash.com/photo-1641971215245-b4ac37f97bb0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYW4lMjBmaXRuZXNzfGVufDB8fHx8MTc3MDIzNjQxNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man fitness"
+    },
+    {
+      "id": "user-7",
+      "description": "A woman enjoying the sunset at a beach.",
+      "imageUrl": "https://images.unsplash.com/photo-1708944704441-f29f280caef1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3b21hbiUyMGJlYWNofGVufDB8fHx8MTc3MDE5MTQ4MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman beach"
+    },
+    {
+      "id": "user-8",
+      "description": "A man in a suit, looking confident and professional.",
+      "imageUrl": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzcwMjI3ODIyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man professional"
+    },
+    {
+      "id": "user-9",
+      "description": "A woman artist painting on a canvas in her studio.",
+      "imageUrl": "https://images.unsplash.com/photo-1609388930423-bd676569ba5a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMGFydGlzdHxlbnwwfHx8fDE3NzAxOTA3MTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman artist"
+    },
+    {
+      "id": "user-10",
+      "description": "A man playing a guitar, sitting on a couch.",
+      "imageUrl": "https://images.unsplash.com/photo-1635350480795-96f42131e4a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYW4lMjBndWl0YXJ8ZW58MHx8fHwxNzcwMjAyMDQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man guitar"
+    },
+    {
+      "id": "avatar-1",
+      "description": "AI generated avatar of a woman",
+      "imageUrl": "https://images.unsplash.com/photo-1678889284814-be932734a596?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhdmF0YXIlMjB3b21hbnxlbnwwfHx8fDE3NzAyMzY0MTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "avatar woman"
+    },
+    {
+      "id": "avatar-2",
+      "description": "AI generated avatar of a man",
+      "imageUrl": "https://images.unsplash.com/photo-1624561172888-ac93c696e10c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhdmF0YXIlMjBtYW58ZW58MHx8fHwxNzcwMjM2NDE0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "avatar man"
+    }
+  ]
+}

@@ -1,0 +1,576 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Nue Flirt application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's phone number, especially for Indian users with OTP verification."
+        },
+        "age": {
+          "type": "number",
+          "description": "User's age. Must be 18 or older."
+        },
+        "gender": {
+          "type": "string",
+          "description": "User's gender."
+        },
+        "preferences": {
+          "type": "string",
+          "description": "User's dating preferences."
+        },
+        "location": {
+          "type": "string",
+          "description": "User's location (geolocation data)."
+        },
+        "profileId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: User 1:1 UserProfile)"
+        },
+        "explicitContentOptIn": {
+          "type": "boolean",
+          "description": "Indicates whether the user has opted-in for explicit content."
+        },
+        "datingIntent": {
+          "type": "string",
+          "description": "User's dating intention.",
+          "enum": [
+            "Casual",
+            "Serious",
+            "Marriage",
+            "Figuring it out"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "age",
+        "gender",
+        "location"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile, including photos, bio, interests, and AI-generated avatars.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "bio": {
+          "type": "string",
+          "description": "User's biography."
+        },
+        "interests": {
+          "type": "array",
+          "description": "User's interests.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "photos": {
+          "type": "array",
+          "description": "References to photos stored elsewhere.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avatarId": {
+          "type": "string",
+          "description": "Reference to the AI-generated avatar video. (Relationship: UserProfile 1:1 Video)"
+        },
+        "language": {
+          "type": "string",
+          "description": "User's preferred language. (Indian-specific filter)."
+        },
+        "region": {
+          "type": "string",
+          "description": "User's region. (Indian-specific filter)."
+        },
+        "community": {
+          "type": "string",
+          "description": "User's community. (Indian-specific filter)."
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the user was last active."
+        },
+        "datingIntent": {
+          "type": "string",
+          "description": "User's dating intention, denormalized for filtering.",
+          "enum": [
+            "Casual",
+            "Serious",
+            "Marriage",
+            "Figuring it out"
+          ]
+        },
+        "promptAnswers": {
+          "type": "array",
+          "description": "User's answers to profile prompts.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string"
+              },
+              "answer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "prompt",
+              "answer"
+            ]
+          }
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Indicates if the user has completed a verification step."
+        },
+        "trustScore": {
+          "type": "number",
+          "description": "A score from 0-100 indicating profile authenticity and completeness."
+        },
+        "zodiac": {
+          "type": "string",
+          "description": "User's zodiac sign."
+        },
+        "pets": {
+          "type": "string",
+          "description": "User's preference or status regarding pets."
+        },
+        "smoking": {
+          "type": "string",
+          "description": "User's smoking habits."
+        },
+        "kids": {
+          "type": "string",
+          "description": "User's status regarding having or wanting kids."
+        },
+        "boostedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp indicating when the profile boost expires."
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "Video": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Video",
+      "type": "object",
+      "description": "Represents AI-generated short videos, including teaser videos and interactive reveal videos.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Video entity."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the video file.",
+          "format": "uri"
+        },
+        "style": {
+          "type": "string",
+          "description": "Style of the video (e.g., traditional Indian attire, modern, sensual/half-nude)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of video (teaser, reveal)."
+        },
+        "explicitContent": {
+          "type": "boolean",
+          "description": "Indicates whether the video contains explicit content."
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "style",
+        "type"
+      ]
+    },
+    "Match": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Match",
+      "type": "object",
+      "description": "Represents a match between two users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Match entity."
+        },
+        "user1Id": {
+          "description": "Reference to User. (Relationship: User N:N Match)",
+          "$ref": "#/backend/entities/User"
+        },
+        "user2Id": {
+          "description": "Reference to User. (Relationship: User N:N Match)",
+          "$ref": "#/backend/entities/User"
+        },
+        "matchTime": {
+          "type": "string",
+          "description": "Timestamp of when the match occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "user1Id",
+        "user2Id",
+        "matchTime"
+      ]
+    },
+    "Like": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Like",
+      "type": "object",
+      "description": "Represents a like action from one user to another.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Like entity."
+        },
+        "swiperId": {
+          "description": "The user ID of the person who performed the swipe.",
+          "$ref": "#/backend/entities/User"
+        },
+        "swipedId": {
+          "description": "The user ID of the person who was swiped on.",
+          "$ref": "#/backend/entities/User"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the like occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "swiperId",
+        "swipedId",
+        "createdAt"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a chat message between two users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChatMessage entity."
+        },
+        "senderId": {
+          "description": "Reference to User who sent the message. (Relationship: User 1:N ChatMessage)",
+          "$ref": "#/backend/entities/User"
+        },
+        "receiverId": {
+          "description": "Reference to User who will receive the message. (Relationship: User 1:N ChatMessage)",
+          "$ref": "#/backend/entities/User"
+        },
+        "text": {
+          "type": "string",
+          "description": "Text of the chat message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the message was sent.",
+          "format": "date-time"
+        },
+        "videoId": {
+          "type": "string",
+          "description": "Reference to Video, if the message contains a video. (Relationship: ChatMessage 1:1 Video)"
+        }
+      },
+      "required": [
+        "id",
+        "senderId",
+        "receiverId",
+        "text",
+        "timestamp"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription status and details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Subscription entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who owns the subscription. (Relationship: User 1:1 Subscription)"
+        },
+        "planType": {
+          "type": "string",
+          "description": "Type of subscription plan (e.g., free, premium)."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Date when the subscription started.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Date when the subscription expires.",
+          "format": "date-time"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment method used for the subscription (e.g., UPI, card, Paytm)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "planType",
+        "startDate",
+        "endDate",
+        "paymentMethod"
+      ]
+    },
+    "CreditBalance": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CreditBalance",
+      "type": "object",
+      "description": "Represents a user's credit balance for purchasing extra AI videos.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CreditBalance entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who owns the credit balance. (Relationship: User 1:1 CreditBalance)"
+        },
+        "balance": {
+          "type": "number",
+          "description": "Current credit balance."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "balance"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a user report for abusive behavior.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Report entity."
+        },
+        "reporterId": {
+          "type": "string",
+          "description": "Reference to User who submitted the report. (Relationship: User 1:N Report)"
+        },
+        "reportedId": {
+          "type": "string",
+          "description": "Reference to User who is being reported. (Relationship: User 1:N Report)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for the report."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the report was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "reporterId",
+        "reportedId",
+        "reason",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user authentication and core data. Includes fields like email, phone number, age, gender, preferences, location, and explicit content opt-in. The userId is used to control access to user-specific data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/user_profiles/{profileId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information, including bio, interests, photos, avatarId, language, region, and community. Each profile includes a userId field to link back to the corresponding user.  This allows secure lookups of profile by user ID.",
+          "params": [
+            {
+              "name": "profileId",
+              "description": "The unique identifier for the user profile."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/videos/{videoId}",
+        "definition": {
+          "entityName": "Video",
+          "schema": {
+            "$ref": "#/backend/entities/Video"
+          },
+          "description": "Stores video metadata, including the URL, style, type (teaser, reveal), and explicitContent flag. The userId is included for identifying the owner of the video.",
+          "params": [
+            {
+              "name": "videoId",
+              "description": "The unique identifier for the video."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/matches/{matchId}",
+        "definition": {
+          "entityName": "Match",
+          "schema": {
+            "$ref": "#/backend/entities/Match"
+          },
+          "description": "Stores match data between two users, including user1Id, user2Id, and matchTime. The matchId serves as the document ID. Contains denormalized user IDs for authorization independence.",
+          "params": [
+            {
+              "name": "matchId",
+              "description": "The unique identifier for the match."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/likes/{likeId}",
+        "definition": {
+          "entityName": "Like",
+          "schema": {
+            "$ref": "#/backend/entities/Like"
+          },
+          "description": "Stores like actions. Used to determine mutual matches.",
+          "params": [
+            {
+              "name": "likeId",
+              "description": "The unique ID for the like action."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores chat messages between two users, including senderId, receiverId, message text, timestamp, and an optional videoId. The chatId is derived from user1Id and user2Id. Access controlled by senderId or receiverId.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat, derived from the user IDs of the participants."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the chat message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores subscription details for users, including userId, planType, startDate, endDate, and paymentMethod. Accessed and managed by the user's ID.",
+          "params": [
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/credit_balances/{creditBalanceId}",
+        "definition": {
+          "entityName": "CreditBalance",
+          "schema": {
+            "$ref": "#/backend/entities/CreditBalance"
+          },
+          "description": "Stores credit balance information for users, including userId and balance. Accessible only to the user and admin roles.",
+          "params": [
+            {
+              "name": "creditBalanceId",
+              "description": "The unique identifier for the credit balance."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores user reports, including reporterId, reportedId, reason, and timestamp. Accessible for moderation and admin purposes.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the core features of the Nue Flirt application, focusing on user authentication, profile management, matching, chat, and explicit content handling, while prioritizing security, scalability, and debuggability. The structure emphasizes authorization independence through denormalization and structural segregation to simplify security rules and enable efficient data access.  Path-based ownership and membership maps are used for clear access modeling.\n\n**Authorization Independence (Denormalization):**\n\n*   User-related data is primarily stored under `/users/{userId}`.  Access to a user's profile and associated data is controlled by the user's ID. This eliminates the need for `get()` calls to parent documents to determine authorization.\n*   Match data denormalizes user IDs (`user1Id`, `user2Id`) within the `/matches/{matchId}` document, ensuring that rules can be written to verify that either user in the match can read/write match-related data without needing to `get()` user documents.\n*   ChatMessage documents are stored in `/chats/{chatId}/messages/{messageId}`.  The `chatId` is derived from a combination of `user1Id` and `user2Id`, ensuring a unique chat path.  Security rules can validate that either `request.auth.uid` matches `ChatMessage.senderId` or `ChatMessage.receiverId`.\n\n**Structural Segregation (Homogeneous Security Posture):**\n\n*   User profiles are stored in `/user_profiles/{profileId}`. Each profile has a `userId` field, which is used to create a one-to-one relationship with the user data. This segregates profile data from authentication data, providing a clear separation of concerns and simplifying security rules.\n*   Videos are stored in `/videos/{videoId}`. Each video has a `userId` field, which is used to identify the owner of the video. This allows for easy filtering and moderation of videos.\n*   Explicit content is handled via the `explicitContentOptIn` field in the `/users/{userId}` document. Separate collections or subcollections are not created based on the explicit content setting. Instead, the security rules will evaluate the `explicitContentOptIn` field to determine access to explicit content, and the client-side code can filter content based on this setting.\n\n**QAPs (Rules are not Filters):**\n\n*   The structure supports secure list operations by leveraging path-based ownership for private data and membership maps for collaborative data. For example, listing messages in `/chats/{chatId}/messages` is secure because rules can verify that the requesting user is a participant in the chat.\n*   The segregation of user data, profiles, and videos into separate collections with clear ownership models allows for efficient and secure queries, as rules can be applied at the collection level without complex filtering logic."
+  }
+}
