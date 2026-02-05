@@ -19,6 +19,7 @@ export default {
       fontFamily: {
         body: ['Poppins', 'sans-serif'],
         headline: ['Poppins', 'sans-serif'],
+        brand: ['DM Sans', 'Poppins', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

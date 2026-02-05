@@ -8,6 +8,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.font-brand {
+  font-family: 'DM Sans', 'Poppins', system-ui, sans-serif;
+}
 
 /* Smooth scroll and reduced motion respect */
 @media (prefers-reduced-motion: no-preference) {
