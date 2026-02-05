@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
+  icons: {
+    icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }],
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     title: APP_NAME,
@@ -26,7 +30,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#FAE8EF',
+  themeColor: '#C98A72',
 }
 
 export default function RootLayout({

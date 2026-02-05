@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Desi / Khyaal-style: refined, warm, smooth */
+/* NueFlirt brand: rose gold primary, warm light / charcoal dark */
 body {
   font-family: 'Poppins', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -17,58 +17,59 @@ body {
 }
 
 @layer base {
+  /* Brand: metallic rose gold primary, warm light / charcoal dark */
   :root {
-    --background: 330 67% 95%;
-    --foreground: 325 20% 20%;
-    --card: 330 60% 98%;
-    --card-foreground: 325 20% 20%;
-    --popover: 330 60% 98%;
-    --popover-foreground: 325 20% 20%;
-    --primary: 325 87% 58%;
-    --primary-foreground: 330 80% 98%;
-    --secondary: 330 40% 90%;
-    --secondary-foreground: 325 20% 20%;
-    --muted: 330 40% 92%;
-    --muted-foreground: 325 15% 45%;
-    --accent: 288 54% 51%;
-    --accent-foreground: 288 60% 98%;
+    --background: 30 15% 98%;
+    --foreground: 25 18% 18%;
+    --card: 30 20% 99%;
+    --card-foreground: 25 18% 18%;
+    --popover: 30 20% 99%;
+    --popover-foreground: 25 18% 18%;
+    --primary: 15 48% 58%;
+    --primary-foreground: 30 30% 98%;
+    --secondary: 25 25% 92%;
+    --secondary-foreground: 25 18% 22%;
+    --muted: 28 20% 93%;
+    --muted-foreground: 25 12% 45%;
+    --accent: 18 45% 52%;
+    --accent-foreground: 30 30% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 330 30% 88%;
-    --input: 330 30% 90%;
-    --ring: 325 87% 58%;
-    --chart-1: 12 76% 61%;
+    --border: 28 18% 88%;
+    --input: 28 18% 90%;
+    --ring: 15 48% 58%;
+    --chart-1: 15 55% 55%;
     --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-3: 25 30% 25%;
+    --chart-4: 40 45% 60%;
+    --chart-5: 18 50% 65%;
     --radius: 0.75rem;
   }
   .dark {
-    --background: 288 10% 10%;
-    --foreground: 330 40% 90%;
-    --card: 288 10% 12%;
-    --card-foreground: 330 40% 90%;
-    --popover: 288 10% 10%;
-    --popover-foreground: 330 40% 90%;
-    --primary: 325 87% 58%;
-    --primary-foreground: 325 20% 15%;
-    --secondary: 288 10% 18%;
-    --secondary-foreground: 330 40% 90%;
-    --muted: 288 10% 18%;
-    --muted-foreground: 330 20% 60%;
-    --accent: 288 54% 51%;
-    --accent-foreground: 288 60% 98%;
+    --background: 0 0% 11%;
+    --foreground: 28 25% 92%;
+    --card: 0 0% 14%;
+    --card-foreground: 28 25% 92%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 28 25% 92%;
+    --primary: 18 50% 65%;
+    --primary-foreground: 0 0% 12%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 28 25% 92%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 28 15% 60%;
+    --accent: 18 45% 58%;
+    --accent-foreground: 30 30% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 288 10% 20%;
-    --input: 288 10% 20%;
-    --ring: 325 87% 65%;
-    --chart-1: 220 70% 50%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 18 50% 65%;
+    --chart-1: 18 55% 62%;
     --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-3: 28 30% 55%;
+    --chart-4: 15 45% 60%;
+    --chart-5: 25 40% 70%;
   }
 }
 

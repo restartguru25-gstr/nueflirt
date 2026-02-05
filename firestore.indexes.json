@@ -7,13 +7,6 @@
         { "fieldPath": "swipedId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "library_videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "popularity", "order": "DESCENDING" }
-      ]
     }
   ],
   "fieldOverrides": []
