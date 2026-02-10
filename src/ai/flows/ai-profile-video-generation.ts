@@ -44,8 +44,10 @@ const generateProfileVideoFlow = ai.defineFlow(
     const stylePrompt = isLegacyMature
       ? 'mature, elegant, discreet aesthetic suitable for a private dating profile; tasteful and refined.'
       : `the style of ${input.style}`;
+    const contentTypeMatch = input.photoDataUri.match(/^data:([^;]+);/);
+    const contentType = contentTypeMatch ? contentTypeMatch[1] : 'image/png';
     let { operation } = await ai.generate({
-      model: 'veo-3.0-generate-preview',
+      model: 'googleai/veo-2.0-generate-001',
       prompt: [
         {
           text: `Generate a short, SFW (safe for work) video in ${stylePrompt} based on the following photo. The video should be suitable for use as a dating profile teaser. Do not include any explicit or suggestive content.`,
@@ -53,18 +55,13 @@ const generateProfileVideoFlow = ai.defineFlow(
         {
           media: {
             url: input.photoDataUri,
+            contentType,
           },
         },
       ],
       config: {
         aspectRatio: '16:9',
-        personGeneration: 'allow_all',
-        safetySettings: [
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-        ]
+        personGeneration: 'allow_adult',
       },
     });
 

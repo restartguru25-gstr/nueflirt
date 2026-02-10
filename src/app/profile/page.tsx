@@ -415,10 +415,10 @@ export default function ProfilePage() {
             const result = await generateProfileVideo({ photoDataUri, style: videoStyle });
             setGeneratedVideo(result.videoDataUri);
             if (userProfileRef) updateDocumentNonBlocking(userProfileRef, { teaserVideoUrl: result.videoDataUri });
-            toast({ title: 'Video Generation Started!' });
+            toast({ title: 'Video generated!', description: 'Your profile video is ready.' });
         } catch (error) {
             console.error(error);
-             toast({ variant: 'destructive', title: 'Video Generation Failed' });
+            toast({ variant: 'destructive', title: 'Video generation failed', description: error instanceof Error ? error.message : 'Check GEMINI_API_KEY and try again.' });
         } finally {
             setIsGenerating(null);
         }
@@ -904,6 +904,7 @@ export default function ProfilePage() {
                                                 {legacyModeOptIn && <SelectItem value="legacy_mature">Legacy (mature style)</SelectItem>}
                                             </SelectContent>
                                         </Select>
+                                        <p className="text-xs text-muted-foreground">May take up to a minute.</p>
                                         <Button className="w-full" onClick={handleGenerateVideo} disabled={!!isGenerating}>
                                             {isGenerating === 'video' && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                                             {isGenerating === 'video' ? 'Generating...' : 'Generate Video'}
