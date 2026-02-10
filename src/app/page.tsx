@@ -1,31 +1,13 @@
 'use client';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Film, Heart, MessageCircle, Shield, Zap, Users, ChevronRight } from "lucide-react";
+import { FeatureTilesGrid, FeatureTile, DETAILED_FEATURES } from "@/components/feature-tile";
+import { Heart, MessageCircle, Shield, Zap, Users, ChevronRight } from "lucide-react";
 import Link from 'next/link';
 import { Logo } from "@/components/logo";
 import { motion } from 'framer-motion';
 
-const features = [
-  {
-    icon: <Film className="h-7 w-7 text-primary" />,
-    title: "AI Videos & Reveals",
-    description: "Stand out with AI-generated profile videos and playful interactive reveals for matches.",
-  },
-  {
-    icon: <Heart className="h-7 w-7 text-primary" />,
-    title: "Swipe & Match",
-    description: "Discover people with smart filters—language, region, zodiac—and connect when it’s mutual.",
-  },
-  {
-    icon: <MessageCircle className="h-7 w-7 text-primary" />,
-    title: "Chat & Calls",
-    description: "Real-time chat with photos, voice notes, and voice or video calls when you’re ready.",
-  },
-];
+const heroFeaturesSubset = DETAILED_FEATURES.slice(0, 6);
 
-const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 
 export default function Home() {
   return (
@@ -50,45 +32,65 @@ export default function Home() {
       </motion.header>
 
       <main className="flex-grow">
-        {/* Hero — dating-app style */}
-        <section className="relative container mx-auto px-4 pt-12 pb-16 md:pt-20 md:pb-24 text-center overflow-hidden">
+        {/* Hero — two-column: headline + CTAs left, features panel right */}
+        <section className="relative container mx-auto px-4 pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="relative max-w-2xl mx-auto"
-          >
-            <h1 className="font-brand text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-tight">
-              Find your spark.
-              <br />
-              <span className="text-primary">Nue Flirt.</span>
-            </h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="mt-5 text-base md:text-lg text-muted-foreground max-w-md mx-auto"
-            >
-              Dating reimagined for India. AI videos, smart filters, chat & calls—all in one app.
-            </motion.p>
+          <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-              className="mt-8 flex flex-col sm:flex-row justify-center gap-3"
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="text-center lg:text-left"
             >
-              <Button size="lg" asChild className="btn-press rounded-full px-8 shadow-soft hover:shadow-glow-primary transition-all">
-                <Link href="/signup">Get started free</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="btn-press rounded-full px-8">
-                <Link href="/login">I already have an account</Link>
-              </Button>
+              <h1 className="font-brand text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-tight">
+                Find your spark.
+                <br />
+                <span className="text-primary">Nue Flirt.</span>
+              </h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="mt-5 text-base md:text-lg text-muted-foreground max-w-md mx-auto lg:mx-0"
+              >
+                Dating reimagined for India. AI videos, smart filters, chat & calls—all in one app.
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="mt-8 flex flex-col sm:flex-row justify-center lg:justify-start gap-3"
+              >
+                <Button size="lg" asChild className="btn-press rounded-full px-8 shadow-soft hover:shadow-glow-primary transition-all">
+                  <Link href="/signup">Get started free</Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild className="btn-press rounded-full px-8">
+                  <Link href="/login">I already have an account</Link>
+                </Button>
+              </motion.div>
             </motion.div>
-          </motion.div>
+
+            {/* Features panel — modern, no image */}
+            <motion.div
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/60 shadow-soft overflow-hidden p-5 md:p-6"
+            >
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">What’s inside</p>
+                <h3 className="font-brand font-bold text-foreground mt-1 text-lg">App features</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {heroFeaturesSubset.map((f, i) => (
+                  <FeatureTile key={f.title} feature={f} index={i} compact />
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </section>
 
-        {/* Features — 3 cards, scannable */}
+        {/* Detailed feature tiles — animated grid */}
         <section className="container mx-auto px-4 py-12 md:py-20">
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -106,29 +108,10 @@ export default function Home() {
           >
             More than just a profile
           </motion.h2>
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-40px" }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8"
-          >
-            {features.map((feature) => (
-              <motion.div key={feature.title} variants={item}>
-                <Card className="h-full rounded-2xl border-primary/10 bg-card/80 backdrop-blur-sm shadow-soft hover:shadow-card transition-all duration-300 overflow-hidden">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      {feature.icon}
-                    </div>
-                    <CardTitle className="font-headline text-lg pt-2">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+          <FeatureTilesGrid
+            features={DETAILED_FEATURES}
+            columns="grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+          />
         </section>
 
         {/* One-line trust strip — replaces long About + bullet list */}
