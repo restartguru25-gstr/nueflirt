@@ -181,7 +181,7 @@ export default function SignupPage() {
         job: values.job || "",
         drinking: values.drinking || "",
         exercise: values.exercise || "",
-        relationshipStatus: values.relationshipStatus || undefined,
+        relationshipStatus: values.relationshipStatus || null,
       }
 
       const userRef = doc(firestore, "users", user.uid);
