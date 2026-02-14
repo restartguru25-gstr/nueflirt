@@ -227,6 +227,18 @@ export default function SignupPage() {
     })
   }
 
+  if (!auth || !firestore) {
+    return (
+      <AuthLayout>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-xs text-muted-foreground mt-2">If this takes too long, refresh the page.</p>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout>
       <Form {...form}>
