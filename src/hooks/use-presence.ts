@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useUser, useFirestore, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 
 export function usePresence() {
@@ -19,7 +19,7 @@ export function usePresence() {
     const updatePresence = () => {
       // Ensure we don't try to update if user has logged out
       if (user) {
-        updateDocumentNonBlocking(userProfileRef, { lastSeen: serverTimestamp() });
+        setDocumentNonBlocking(userProfileRef, { lastSeen: serverTimestamp() }, { merge: true });
       }
     };
 
