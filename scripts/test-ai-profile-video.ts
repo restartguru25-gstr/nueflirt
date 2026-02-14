@@ -65,7 +65,8 @@ async function main() {
   console.log('Operation started. Polling every 5s (can take up to ~1 min)...');
   while (!operation.done) {
     await new Promise((r) => setTimeout(r, 5000));
-    operation = await ai.checkOperation(operation);
+    const op = { ...operation, id: operation.name ?? '' };
+    operation = (await ai.checkOperation(op as Parameters<typeof ai.checkOperation>[0])) as typeof operation;
     console.log('  ... still generating');
   }
 

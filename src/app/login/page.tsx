@@ -20,7 +20,7 @@ import { z } from "zod"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { useAuth, useUser } from "@/firebase"
-import { initiateEmailSignIn, initiateGoogleSignIn, initiateFacebookSignIn, initiateAppleSignIn, createPhoneRecaptcha, sendPhoneOtp, confirmPhoneOtp } from "@/firebase/non-blocking-login"
+import { initiateEmailSignIn, initiateGoogleSignIn, createPhoneRecaptcha, sendPhoneOtp, confirmPhoneOtp } from "@/firebase/non-blocking-login"
 import type { ConfirmationResult } from "firebase/auth"
 import { Loader2, Phone } from "lucide-react"
 
@@ -31,20 +31,6 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
         <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.022,35.258,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
-)
-
-// A simple SVG for Facebook icon
-const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 24 24" {...props}>
-        <path fill="#3b5998" d="M12,2C6.477,2,2,6.477,2,12c0,5.013,3.693,9.153,8.505,9.876V14.69H8.031v-2.822h2.474v-2.18c0-2.45,1.442-3.793,3.675-3.793c1.06,0,2.162,0.188,2.162,0.188v2.531h-1.32c-1.21,0-1.59,0.762-1.59,1.52v1.724h2.83l-0.455,2.822h-2.375v7.186C18.307,21.153,22,17.013,22,12C22,6.477,17.523,2,12,2z"></path>
-    </svg>
-)
-
-// Apple icon
-const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-1.15 1.94-2.31 3.83-4.55 5.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
     </svg>
 )
 
@@ -142,18 +128,10 @@ export default function LoginPage() {
         </form>
       </Form>
       <Separator className="my-2" />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="flex justify-center">
         <Button type="button" variant="outline" disabled={!!isOAuthLoading || !auth} onClick={() => { if (!auth) return; setIsOAuthLoading('google'); initiateGoogleSignIn(auth, () => setIsOAuthLoading(null)); }}>
           {isOAuthLoading === 'google' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
           Google
-        </Button>
-        <Button type="button" variant="outline" disabled={!!isOAuthLoading || !auth} onClick={() => { if (!auth) return; setIsOAuthLoading('facebook'); initiateFacebookSignIn(auth, () => setIsOAuthLoading(null)); }}>
-          {isOAuthLoading === 'facebook' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FacebookIcon className="mr-2 h-4 w-4" />}
-          Facebook
-        </Button>
-        <Button type="button" variant="outline" disabled={!!isOAuthLoading || !auth} onClick={() => { if (!auth) return; setIsOAuthLoading('apple'); initiateAppleSignIn(auth, () => setIsOAuthLoading(null)); }}>
-          {isOAuthLoading === 'apple' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AppleIcon className="mr-2 h-4 w-4" />}
-          Apple
         </Button>
       </div>
       <Separator className="my-4" />
